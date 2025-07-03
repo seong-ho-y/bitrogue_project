@@ -1,122 +1,220 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
-void main() {
-  runApp(const MyApp());
+//import 'package:http/http.dart' as http;
+import 'package:flame/components.dart';
+import 'package:flame/game.dart';
+import 'package:flame/flame.dart';
+import 'package:flutter/material.dart';
+import 'package:flame/input.dart';
+import 'package:flame/extensions.dart';
+import 'player.dart';
+import 'projectile.dart';
+
+
+// ==================== MyGame ====================
+class MyGame extends FlameGame with HasCollisionDetection {
+  static bool isMovingUp = false;
+  static bool isMovingDown = false;
+  static bool isMovingLeft = false;
+  static bool isMovingRight = false;
+  static int score = 0;
+
+
+  static int playerSpeed = 100;
+
+  Vector2 lastDirection = Vector2(0, -1); // 기본 위쪽
+  late PlayerComponent player;
+
+  @override
+  Future<void> onLoad() async {
+    super.onLoad();
+    player = PlayerComponent();
+    add(player);
+  }
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
 
-  // This widget is the root of your application.
+
+// ==================== GameBoyUI ====================
+class GameBoyUI extends StatelessWidget {
+  final MyGame game;
+  const GameBoyUI({super.key, required this.game});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
+      home: Scaffold(
+        backgroundColor: Colors.black,
+        body: Column(
+          children: [
+            // 상단 스크린 영역
+            Expanded(
+              flex: 3,
+              child: Container(
+                color: Colors.green[900],
+                child: GameWidget(game: game),
+              ),
+            ),
+            // 하단 UI 영역
+            Expanded(
+              flex: 2,
+              child: Container(
+                color: Colors.grey[800],
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // D패드 + A/B 버튼 영역
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // D패드
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            GestureDetector(
+                              onTapDown: (_) {
+                                MyGame.isMovingUp = true;
+                              },
+                              onTapUp: (_) {
+                                MyGame.isMovingUp = false;
+                              },
+                              onTapCancel: () {
+                                MyGame.isMovingUp = false;
+                              },
+                              child: const Icon(Icons.arrow_drop_up, size: 48, color: Colors.white),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                GestureDetector(
+                                  onTapDown: (_) {
+                                    MyGame.isMovingLeft = true;
+                                  },
+                                  onTapUp: (_) {
+                                    MyGame.isMovingLeft = false;
+                                  },
+                                  onTapCancel: () {
+                                    MyGame.isMovingLeft = false;
+                                  },
+                                  child: const Icon(Icons.arrow_left, size: 48, color: Colors.white),
+                                ),
+                                const SizedBox(width: 48),
+                                GestureDetector(
+                                  onTapDown: (_) {
+                                    MyGame.isMovingRight = true;
+                                  },
+                                  onTapUp: (_) {
+                                    MyGame.isMovingRight = false;
+                                  },
+                                  onTapCancel: () {
+                                    MyGame.isMovingRight = false;
+                                  },
+                                  child: const Icon(Icons.arrow_right, size: 48, color: Colors.white),
+                                ),
+                              ],
+                            ),
+                            GestureDetector(
+                              onTapDown: (_) {
+                                MyGame.isMovingDown = true;
+                              },
+                              onTapUp: (_) {
+                                MyGame.isMovingDown = false;
+                              },
+                              onTapCancel: () {
+                                MyGame.isMovingDown = false;
+                              },
+                              child: const Icon(Icons.arrow_drop_down, size: 48, color: Colors.white),
+                            ),
+                          ],
+                        ),
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+                        // A/B 버튼
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Transform.translate(
+                              offset: const Offset(20, 0),
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  game.add(ProjectileComponent(
+                                    game.player.position.clone(),
+                                    game.lastDirection.clone(),
+                                  ));
+                                },
+                                child: const Text('A'),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Transform.translate(
+                              offset: const Offset(-20, 0),
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  print("B button pressed");
+                                },
+                                child: const Text('B'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
+}
+
+//=========================   MyApp    ==============================
+
+class MyApp extends StatefulWidget{ //나중에 서버 연동해서 불러올 때 쓸 코드
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  String leaderboardText = "Loading...";
+
+  @override
+  void initState() {
+    super.initState();
+    //getLeaderboard();
+  }
+  
+  // Future<void> getLeaderboard() async {
+  //   final url = Uri.parse('http://[YOUR_PC_IP]:8000/leaderboard');
+  //   final response = await http.get(url);
+
+  //   if (response.statusCode == 200) {
+  //     final data = jsonDecode(response.body);
+  //     setState(() {
+  //       leaderboardText = data.toString();
+  //     });
+  //   } else {
+  //     setState(() {
+  //       leaderboardText = 'Failed to load: ${response.statusCode}';
+  //     });
+  //   }
+  // }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: Text('BitRogue Leaderboard')),
+        body: Center(child: Text(leaderboardText)),
+      ),
+    );
+  }
+}
+
+// ==================== main ====================
+final myGame = MyGame();
+
+void main() {
+  runApp(GameBoyUI(game: myGame));
 }
