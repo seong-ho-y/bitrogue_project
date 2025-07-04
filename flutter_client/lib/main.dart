@@ -7,8 +7,10 @@ import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/input.dart';
 import 'package:flame/extensions.dart';
+import 'package:flutter_client/enemyManager.dart';
 import 'player.dart';
 import 'projectile.dart';
+import 'enemyManager.dart';
 
 
 // ==================== MyGame ====================
@@ -24,12 +26,17 @@ class MyGame extends FlameGame with HasCollisionDetection {
 
   Vector2 lastDirection = Vector2(0, -1); // 기본 위쪽
   late PlayerComponent player;
+  late EnemyManager enemyManager;
 
   @override
   Future<void> onLoad() async {
     super.onLoad();
     player = PlayerComponent();
     add(player);
+
+    //EnemyManager 생성 및 추가
+    enemyManager = EnemyManager();
+    add(enemyManager);
   }
 }
 

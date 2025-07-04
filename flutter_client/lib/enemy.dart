@@ -8,7 +8,7 @@ import 'package:flutter_client/projectile.dart';
 import 'main.dart';
 import 'player.dart';
 
-class EnemyBaseComponent extends RectangleComponent with HasGameReference<FlameGame>, CollisionCallbacks {
+class EnemyBaseComponent extends RectangleComponent with HasGameReference<MyGame>, CollisionCallbacks {
   double maxHealth;
   double currentHealth;
   double moveSpeed;
@@ -22,7 +22,7 @@ class EnemyBaseComponent extends RectangleComponent with HasGameReference<FlameG
   }) : currentHealth = maxHealth,
        super(
          position: position ?? Vector2.zero(),
-         size: size ?? Vector2.all(32),
+         size: size ?? Vector2.all(16),
          anchor: Anchor.center,
        );
 
@@ -67,17 +67,14 @@ class EnemyBaseComponent extends RectangleComponent with HasGameReference<FlameG
   }
 
   @override
-  void onConllision(Set<Vector2> intersectionPoints, PositionComponent other){
+  void onCollision(Set<Vector2> intersectionPoints, PositionComponent other){
     super.onCollision(intersectionPoints, other);
 
      if (other is EnemyBaseComponent) {
     // 적끼리 충돌 시 간단히 밀어내기
+    print("PushPushBaby");
     final delta = (position - other.position).normalized();
     position += delta * 1; // 1픽셀 정도 밀어내기
-    }
-
-    if (other is ProjectileComponent) {
-      takeDamage(1);
     }
   }
 }

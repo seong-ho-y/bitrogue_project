@@ -1,10 +1,12 @@
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'enemy.dart';
 
 import 'main.dart';
 
 // ==================== ProjectileComponent ====================
-class ProjectileComponent extends RectangleComponent with HasGameReference<MyGame> {
+class ProjectileComponent extends RectangleComponent with HasGameReference<MyGame>, CollisionCallbacks {
   final Vector2 direction;
   final double speed = 300;
 
@@ -14,6 +16,13 @@ class ProjectileComponent extends RectangleComponent with HasGameReference<MyGam
           size: Vector2(8, 8),
           paint: Paint()..color = Colors.yellow,
         );
+
+  @override
+  void onLoad(){
+    super.onLoad();
+
+    add(RectangleHitbox()); //Hitbox 추가
+  }
 
   @override
   void update(double dt) {
@@ -27,4 +36,14 @@ class ProjectileComponent extends RectangleComponent with HasGameReference<MyGam
       }
     }
   }
+  @override
+void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
+  super.onCollision(intersectionPoints, other);
+
+  if (other is EnemyBaseComponent) {
+    print("Enemy Hit!!");
+    other.takeDamage(1);
+    removeFromParent(); // 투사체 제거
+  }
+}
 }
