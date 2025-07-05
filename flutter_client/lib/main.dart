@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flame/input.dart';
 import 'package:flame/extensions.dart';
 import 'package:flutter_client/enemyManager.dart';
+import 'package:flutter_client/item_manager.dart';
 import 'player.dart';
 import 'projectile.dart';
 import 'enemyManager.dart';
@@ -27,6 +28,8 @@ class MyGame extends FlameGame with HasCollisionDetection {
   Vector2 lastDirection = Vector2(0, -1); // 기본 위쪽
   late PlayerComponent player;
   late EnemyManager enemyManager;
+  late ItemManager itemManager;
+  late TextComponent _scoreText;
 
   @override
   Future<void> onLoad() async {
@@ -37,6 +40,29 @@ class MyGame extends FlameGame with HasCollisionDetection {
     //EnemyManager 생성 및 추가
     enemyManager = EnemyManager();
     add(enemyManager);
+
+    //ItemManager 생성 및 추가
+    itemManager = ItemManager();
+    add(itemManager);
+
+    _scoreText = TextComponent(
+      text: 'Score: ${MyGame.score}',
+      position: Vector2(size.x - 10, 10),
+      anchor: Anchor.topRight,
+      textRenderer: TextPaint(
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+        ),
+      ),
+    );
+    add(_scoreText);
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _scoreText.text = 'Score: ${MyGame.score}';
   }
 }
 
@@ -156,7 +182,7 @@ class GameBoyUI extends StatelessWidget {
                               offset: const Offset(-20, 0),
                               child: ElevatedButton(
                                 onPressed: () {
-                                  print("B button pressed");
+                                  game.player.dodge();
                                 },
                                 child: const Text('B'),
                               ),

@@ -41,7 +41,6 @@ void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
   super.onCollision(intersectionPoints, other);
 
   if (other is EnemyBaseComponent) {
-    print("Enemy Hit!!");
     other.takeDamage(1);
     removeFromParent(); // 투사체 제거
   }

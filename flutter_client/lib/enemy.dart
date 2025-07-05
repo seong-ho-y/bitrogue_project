@@ -72,7 +72,6 @@ class EnemyBaseComponent extends RectangleComponent with HasGameReference<MyGame
 
      if (other is EnemyBaseComponent) {
     // 적끼리 충돌 시 간단히 밀어내기
-    print("PushPushBaby");
     final delta = (position - other.position).normalized();
     position += delta * 1; // 1픽셀 정도 밀어내기
     }
