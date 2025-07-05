@@ -21,12 +21,25 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
     double currentHealth = 5;
 
   //피격 관련 변수들  
-  bool isInvincible = false;
+  bool isInvincible = false; //무적인지 아닌지 
   double invincibleDuration = 1.0;
   double invincibleTimer = 0.0;
   double blinkTimer = 0.0;
   double blinkInterval = 0.1;
   bool isVisible = true;
+
+  //닷지 관련 변수들
+  bool isDodge = false;
+  double dodgeMoving = 1.0; //닷지 시 회피거리
+  double dodgeCool = 1.0; //닷지 쿨타임
+  double dodgeTiemr = 0.0;
+  double dodgeTime = 0.7; //닷지 시간
+  //닷지 프레임 회피
+  bool isPerfectDodge = false;
+  double pDodgeTime = 0.3; //퍼펙트 닷지 시간
+  
+
+
 
   @override
   void onLoad(){
@@ -101,7 +114,11 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
     vibrateOnHit();
     print('플레이어 피격! 현재 체력: $currentHealth');
   }
+  void dodge(){
 
+    print("플레이어 닷지");
+
+  }
   /// 사망 처리
   void die() {
     print('플레이어 사망');
