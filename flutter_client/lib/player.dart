@@ -9,6 +9,7 @@ import 'package:vibration/vibration.dart';
 
 
 import 'package:flutter_client/item.dart';
+import 'package:flutter_client/weapon.dart';
 import 'main.dart';
 
 
@@ -24,6 +25,10 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
     double currentHealth = 5;
     double maxShield = 3; // 최대 쉴드
     double currentShield = 3; // 현재 쉴드
+
+    // 무기 관련 변수
+    late Weapon currentWeapon;
+    double _timeSinceLastAttack = 0.0;
 
     // 이동 관련 변수 (관성 적용)
     Vector2 velocity = Vector2.zero();
@@ -50,14 +55,15 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
   @override
   void onLoad(){
     super.onLoad();
-
     add(RectangleHitbox()); //Hitbox 추가
+    equipWeapon(Rifle()); // 기본 무기로 라이플 장착
   }
 
 
   @override
   void update(double dt) {
     super.update(dt);
+    _timeSinceLastAttack += dt;
 
     if (dodgeCooldownTimer > 0) {
       dodgeCooldownTimer -= dt;
@@ -101,8 +107,37 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
         }
       }
       position += velocity * dt;
+
+      // 화면 경계 처리
+      if (position.x > game.size.x - size.x){
+        position.x = 0;
+      }
+      if (position.x < 0){
+        position.x = game.size.x - size.x;
+      }
+      if (position.y > game.size.y - size.y){
+        position.y = 0;
+      }
+      if (position.y < 0){
+        position.y = game.size.y - size. y;
+      }
     }
   }
+
+  /// 무기 발사
+  void fire() {
+    if (_timeSinceLastAttack >= currentWeapon.coolDown) {
+      currentWeapon.attack(game, position.clone(), game.lastDirection.clone());
+      _timeSinceLastAttack = 0.0;
+    }
+  }
+
+  /// 무기 교체
+  void equipWeapon(Weapon newWeapon) {
+    currentWeapon = newWeapon;
+    print('Equipped ${currentWeapon.name}');
+  }
+
       /// 피해 처리 함수
   void takeDamage(double damage, [Vector2? fromPosition]) {
     if (isInvincible) return;

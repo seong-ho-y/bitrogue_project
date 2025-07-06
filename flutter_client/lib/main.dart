@@ -133,11 +133,44 @@ class GameBoyUI extends StatelessWidget {
               child: Container(
                 color: Colors.grey[800],
                 padding: const EdgeInsets.all(16.0),
-                child: Row(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Left Side: D-Pad and Speed Gauge
-                    Column(
+                    // Top Row: Gauges
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Speed Gauge
+                        ValueListenableBuilder<double>(
+                          valueListenable: game.speedNotifier,
+                          builder: (context, value, child) {
+                            return GaugeWidget(label: "SPEED", value: value, color: Colors.cyan);
+                          },
+                        ),
+                        // Health and Shield Gauges
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            ValueListenableBuilder<double>(
+                              valueListenable: game.healthNotifier,
+                              builder: (context, value, child) {
+                                return GaugeWidget(label: "HEALTH", value: value, color: Colors.green);
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            ValueListenableBuilder<double>(
+                              valueListenable: game.shieldNotifier,
+                              builder: (context, value, child) {
+                                return GaugeWidget(label: "SHIELD", value: value, color: Colors.blue);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    // Bottom Row: Controls
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // D-Pad
@@ -174,30 +207,11 @@ class GameBoyUI extends StatelessWidget {
                             ),
                           ],
                         ),
-                        // Speed Gauge
-                        ValueListenableBuilder<double>(
-                          valueListenable: game.speedNotifier,
-                          builder: (context, value, child) {
-                            return GaugeWidget(label: "SPEED", value: value, color: Colors.cyan);
-                          },
-                        ),
-                      ],
-                    ),
-                    // Right Side: A/B Buttons and Gauges
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
                         // A/B Buttons
                         Column(
                           children: [
                              ElevatedButton(
-                                onPressed: () {
-                                  game.add(ProjectileComponent(
-                                    game.player.position.clone(),
-                                    game.lastDirection.clone(),
-                                  ));
-                                },
+                                onPressed: () => game.player.fire(), // 수정된 부분
                                 child: const Text('A'),
                               ),
                               const SizedBox(height: 20),
@@ -205,25 +219,6 @@ class GameBoyUI extends StatelessWidget {
                                 onPressed: () => game.player.dodge(),
                                 child: const Text('B'),
                               ),
-                          ],
-                        ),
-                        // Health and Shield Gauges
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            ValueListenableBuilder<double>(
-                              valueListenable: game.healthNotifier,
-                              builder: (context, value, child) {
-                                return GaugeWidget(label: "HEALTH", value: value, color: Colors.green);
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            ValueListenableBuilder<double>(
-                              valueListenable: game.shieldNotifier,
-                              builder: (context, value, child) {
-                                return GaugeWidget(label: "SHIELD", value: value, color: Colors.blue);
-                              },
-                            ),
                           ],
                         ),
                       ],
