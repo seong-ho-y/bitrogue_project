@@ -29,7 +29,7 @@ class EnemyManager extends Component with HasGameReference {
 
     final enemy = EnemyBaseComponent(
       maxHealth: 5,
-      moveSpeed: 30,
+      moveSpeed: 70,
       position: Vector2(x, y),
       size: Vector2(16, 16),
     );

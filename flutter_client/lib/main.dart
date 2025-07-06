@@ -1,18 +1,13 @@
 import 'dart:convert';
 
-//import 'package:http/http.dart' as http;
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
-import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/input.dart';
-import 'package:flame/extensions.dart';
 import 'package:flutter_client/enemyManager.dart';
 import 'package:flutter_client/item_manager.dart';
 import 'player.dart';
 import 'projectile.dart';
-import 'enemyManager.dart';
-
 
 // ==================== MyGame ====================
 class MyGame extends FlameGame with HasCollisionDetection {
@@ -22,14 +17,16 @@ class MyGame extends FlameGame with HasCollisionDetection {
   static bool isMovingRight = false;
   static int score = 0;
 
-
-  static int playerSpeed = 100;
-
-  Vector2 lastDirection = Vector2(0, -1); // 기본 위쪽
+  Vector2 lastDirection = Vector2(0, -1);
   late PlayerComponent player;
   late EnemyManager enemyManager;
   late ItemManager itemManager;
   late TextComponent _scoreText;
+
+  // ValueNotifiers for player stats
+  final ValueNotifier<double> speedNotifier = ValueNotifier(0);
+  final ValueNotifier<double> healthNotifier = ValueNotifier(0);
+  final ValueNotifier<double> shieldNotifier = ValueNotifier(0);
 
   @override
   Future<void> onLoad() async {
@@ -37,11 +34,9 @@ class MyGame extends FlameGame with HasCollisionDetection {
     player = PlayerComponent();
     add(player);
 
-    //EnemyManager 생성 및 추가
     enemyManager = EnemyManager();
     add(enemyManager);
 
-    //ItemManager 생성 및 추가
     itemManager = ItemManager();
     add(itemManager);
 
@@ -57,15 +52,61 @@ class MyGame extends FlameGame with HasCollisionDetection {
       ),
     );
     add(_scoreText);
+
+    // Initialize notifiers
+    healthNotifier.value = player.currentHealth / player.maxHealth;
+    shieldNotifier.value = player.currentShield / player.maxShield;
   }
 
   @override
   void update(double dt) {
     super.update(dt);
     _scoreText.text = 'Score: ${MyGame.score}';
+
+    // Update notifiers
+    speedNotifier.value = player.velocity.length / player.maxSpeed;
+    healthNotifier.value = player.currentHealth / player.maxHealth;
+    shieldNotifier.value = player.currentShield / player.maxShield;
   }
 }
 
+// ==================== GaugeWidget ====================
+class GaugeWidget extends StatelessWidget {
+  final String label;
+  final double value;
+  final Color color;
+
+  const GaugeWidget({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+        const SizedBox(height: 4),
+        Container(
+          width: 80,
+          height: 10,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white, width: 1),
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: LinearProgressIndicator(
+            value: value,
+            backgroundColor: Colors.grey[800],
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 
 // ==================== GameBoyUI ====================
@@ -80,7 +121,6 @@ class GameBoyUI extends StatelessWidget {
         backgroundColor: Colors.black,
         body: Column(
           children: [
-            // 상단 스크린 영역
             Expanded(
               flex: 3,
               child: Container(
@@ -88,86 +128,70 @@ class GameBoyUI extends StatelessWidget {
                 child: GameWidget(game: game),
               ),
             ),
-            // 하단 UI 영역
             Expanded(
               flex: 2,
               child: Container(
                 color: Colors.grey[800],
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // D패드 + A/B 버튼 영역
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    // Left Side: D-Pad and Speed Gauge
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // D패드
+                        // D-Pad
                         Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             GestureDetector(
-                              onTapDown: (_) {
-                                MyGame.isMovingUp = true;
-                              },
-                              onTapUp: (_) {
-                                MyGame.isMovingUp = false;
-                              },
-                              onTapCancel: () {
-                                MyGame.isMovingUp = false;
-                              },
+                              onTapDown: (_) => MyGame.isMovingUp = true,
+                              onTapUp: (_) => MyGame.isMovingUp = false,
+                              onTapCancel: () => MyGame.isMovingUp = false,
                               child: const Icon(Icons.arrow_drop_up, size: 48, color: Colors.white),
                             ),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 GestureDetector(
-                                  onTapDown: (_) {
-                                    MyGame.isMovingLeft = true;
-                                  },
-                                  onTapUp: (_) {
-                                    MyGame.isMovingLeft = false;
-                                  },
-                                  onTapCancel: () {
-                                    MyGame.isMovingLeft = false;
-                                  },
+                                  onTapDown: (_) => MyGame.isMovingLeft = true,
+                                  onTapUp: (_) => MyGame.isMovingLeft = false,
+                                  onTapCancel: () => MyGame.isMovingLeft = false,
                                   child: const Icon(Icons.arrow_left, size: 48, color: Colors.white),
                                 ),
                                 const SizedBox(width: 48),
                                 GestureDetector(
-                                  onTapDown: (_) {
-                                    MyGame.isMovingRight = true;
-                                  },
-                                  onTapUp: (_) {
-                                    MyGame.isMovingRight = false;
-                                  },
-                                  onTapCancel: () {
-                                    MyGame.isMovingRight = false;
-                                  },
+                                  onTapDown: (_) => MyGame.isMovingRight = true,
+                                  onTapUp: (_) => MyGame.isMovingRight = false,
+                                  onTapCancel: () => MyGame.isMovingRight = false,
                                   child: const Icon(Icons.arrow_right, size: 48, color: Colors.white),
                                 ),
                               ],
                             ),
                             GestureDetector(
-                              onTapDown: (_) {
-                                MyGame.isMovingDown = true;
-                              },
-                              onTapUp: (_) {
-                                MyGame.isMovingDown = false;
-                              },
-                              onTapCancel: () {
-                                MyGame.isMovingDown = false;
-                              },
+                              onTapDown: (_) => MyGame.isMovingDown = true,
+                              onTapUp: (_) => MyGame.isMovingDown = false,
+                              onTapCancel: () => MyGame.isMovingDown = false,
                               child: const Icon(Icons.arrow_drop_down, size: 48, color: Colors.white),
                             ),
                           ],
                         ),
-
-                        // A/B 버튼
+                        // Speed Gauge
+                        ValueListenableBuilder<double>(
+                          valueListenable: game.speedNotifier,
+                          builder: (context, value, child) {
+                            return GaugeWidget(label: "SPEED", value: value, color: Colors.cyan);
+                          },
+                        ),
+                      ],
+                    ),
+                    // Right Side: A/B Buttons and Gauges
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // A/B Buttons
                         Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Transform.translate(
-                              offset: const Offset(20, 0),
-                              child: ElevatedButton(
+                             ElevatedButton(
                                 onPressed: () {
                                   game.add(ProjectileComponent(
                                     game.player.position.clone(),
@@ -176,16 +200,29 @@ class GameBoyUI extends StatelessWidget {
                                 },
                                 child: const Text('A'),
                               ),
-                            ),
-                            const SizedBox(height: 20),
-                            Transform.translate(
-                              offset: const Offset(-20, 0),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  game.player.dodge();
-                                },
+                              const SizedBox(height: 20),
+                              ElevatedButton(
+                                onPressed: () => game.player.dodge(),
                                 child: const Text('B'),
                               ),
+                          ],
+                        ),
+                        // Health and Shield Gauges
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            ValueListenableBuilder<double>(
+                              valueListenable: game.healthNotifier,
+                              builder: (context, value, child) {
+                                return GaugeWidget(label: "HEALTH", value: value, color: Colors.green);
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            ValueListenableBuilder<double>(
+                              valueListenable: game.shieldNotifier,
+                              builder: (context, value, child) {
+                                return GaugeWidget(label: "SHIELD", value: value, color: Colors.blue);
+                              },
                             ),
                           ],
                         ),
@@ -202,48 +239,6 @@ class GameBoyUI extends StatelessWidget {
   }
 }
 
-//=========================   MyApp    ==============================
-
-class MyApp extends StatefulWidget{ //나중에 서버 연동해서 불러올 때 쓸 코드
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  String leaderboardText = "Loading...";
-
-  @override
-  void initState() {
-    super.initState();
-    //getLeaderboard();
-  }
-  
-  // Future<void> getLeaderboard() async {
-  //   final url = Uri.parse('http://[YOUR_PC_IP]:8000/leaderboard');
-  //   final response = await http.get(url);
-
-  //   if (response.statusCode == 200) {
-  //     final data = jsonDecode(response.body);
-  //     setState(() {
-  //       leaderboardText = data.toString();
-  //     });
-  //   } else {
-  //     setState(() {
-  //       leaderboardText = 'Failed to load: ${response.statusCode}';
-  //     });
-  //   }
-  // }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(title: Text('BitRogue Leaderboard')),
-        body: Center(child: Text(leaderboardText)),
-      ),
-    );
-  }
-}
 
 // ==================== main ====================
 final myGame = MyGame();

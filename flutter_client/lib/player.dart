@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/collisions.dart';
@@ -20,9 +22,18 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
         );
     double maxHealth = 5;
     double currentHealth = 5;
+    double maxShield = 3; // 최대 쉴드
+    double currentShield = 3; // 현재 쉴드
 
-  //피격 관련 변수들  
-  bool isInvincible = false; //무적인지 아닌지 
+    // 이동 관련 변수 (관성 적용)
+    Vector2 velocity = Vector2.zero();
+    double maxSpeed = 150.0;
+    double acceleration = 300.0;
+    double friction = 2.5; // 초당 감속 비율
+
+
+  //피격 관련 변수들
+  bool isInvincible = false; //무적인지 아닌지
   double invincibleDuration = 1.0;
   double invincibleTimer = 0.0;
   double blinkTimer = 0.0;
@@ -67,31 +78,43 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
       }
     }
 
-//====================== 이동로직 ==========================
+//====================== 이동로직 (관성 적용) ==========================
     if (!isDodging) {
-      if (MyGame.isMovingUp) {
-        position.y -= MyGame.playerSpeed * dt;
-        game.lastDirection = Vector2(0, -1);
+      final direction = Vector2.zero();
+      if (MyGame.isMovingUp) direction.y -= 1;
+      if (MyGame.isMovingDown) direction.y += 1;
+      if (MyGame.isMovingLeft) direction.x -= 1;
+      if (MyGame.isMovingRight) direction.x += 1;
+
+      if (!direction.isZero()) {
+        // 키 입력이 있을 때: 가속
+        velocity += direction.normalized() * acceleration * dt;
+        if (velocity.length > maxSpeed) {
+          velocity = velocity.normalized() * maxSpeed;
+        }
+        game.lastDirection = direction.normalized();
+      } else {
+        // 키 입력이 없을 때: 감속 (마찰)
+        velocity *= (1 - friction * dt);
+        if (velocity.length < 1.0) {
+          velocity = Vector2.zero();
+        }
       }
-      if (MyGame.isMovingDown) {
-        position.y += MyGame.playerSpeed * dt;
-        game.lastDirection = Vector2(0, 1);
-      }
-      if (MyGame.isMovingLeft) {
-        position.x -= MyGame.playerSpeed * dt;
-        game.lastDirection = Vector2(-1, 0);
-      }
-      if (MyGame.isMovingRight) {
-        position.x += MyGame.playerSpeed * dt;
-        game.lastDirection = Vector2(1, 0);
-      }
+      position += velocity * dt;
     }
   }
       /// 피해 처리 함수
   void takeDamage(double damage, [Vector2? fromPosition]) {
     if (isInvincible) return;
 
-    currentHealth -= damage;
+    if (currentShield > 0) {
+      currentShield -= damage;
+      print('쉴드 피격! 현재 쉴드: $currentShield');
+    } else {
+      currentHealth -= damage;
+      print('플레이어 피격! 현재 체력: $currentHealth');
+    }
+
     if (currentHealth <= 0) {
       die();
     }
@@ -113,7 +136,6 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
 
     //휴대폰 진동
     vibrateOnHit();
-    print('플레이어 피격! 현재 체력: $currentHealth');
   }
   void dodge() {
     if (dodgeCooldownTimer > 0 || isDodging) {
@@ -180,9 +202,13 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
         currentHealth = (currentHealth + value).clamp(0, maxHealth);
         print('Health +$value! Current health: $currentHealth');
         break;
+      case 'shield':
+        currentShield = (currentShield + value).clamp(0, maxShield);
+        print('Shield +$value! Current shield: $currentShield');
+        break;
       case 'speed':
-        MyGame.playerSpeed += value;
-        print('Speed +$value! Current speed: ${MyGame.playerSpeed}');
+        maxSpeed += value;
+        print('MaxSpeed +$value! Current maxSpeed: $maxSpeed');
         break;
       case 'damage':
         // TODO: 발사체 데미지 증가 로직 추가
