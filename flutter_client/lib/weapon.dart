@@ -1,4 +1,4 @@
-
+import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flutter_client/main.dart';
 import 'package:flutter_client/projectile.dart';
@@ -29,8 +29,33 @@ class Rifle extends Weapon {
 
   @override
   void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection) {
-    // ProjectileComponent를 생성하여 게임에 추가합니다.
-    game.add(ProjectileComponent(playerPosition, playerDirection));
+    // 긴 사정거리를 가진 발사체를 생성합니다.
+    game.add(ProjectileComponent(playerPosition, playerDirection, lifeSpan: 1.0));
     print("Rifle fired!");
+  }
+}
+
+/// 5발을 동시에 발사하지만 사정거리가 짧은 샷건 클래스입니다.
+class Shotgun extends Weapon {
+  Shotgun() : super(name: 'Shotgun', coolDown: 0.8);
+
+  @override
+  void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection) {
+    const int bulletCount = 5;
+    const double spreadAngle = pi / 8; // 22.5도
+
+    for (int i = 0; i < bulletCount; i++) {
+      // 각 총알의 각도를 계산합니다.
+      final angle = (i - (bulletCount - 1) / 2) * (spreadAngle / (bulletCount - 1));
+      final rotatedDirection = playerDirection.clone()..rotate(angle);
+
+      // 짧은 사정거리를 가진 발사체를 생성합니다.
+      game.add(ProjectileComponent(
+        playerPosition.clone(),
+        rotatedDirection,
+        lifeSpan: 0.2,
+      ));
+    }
+    print("Shotgun fired!");
   }
 }

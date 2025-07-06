@@ -5,7 +5,7 @@ import 'item.dart';
 class ItemService {
   // 아이템 정보를 제공하는 codex 서버의 주소입니다.
   // 안드로이드 에뮬레이터에서 localhost에 접근하려면 10.0.2.2를 사용해야 합니다.
-  final String _baseUrl = 'http://192.168.0.191:8001';
+  final String _baseUrl = 'http://192.168.45.180:8001';
 
   // 서버로부터 모든 아이템 목록을 가져오는 함수
   Future<List<Item>> getAllItems() async {

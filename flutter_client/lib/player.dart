@@ -15,12 +15,14 @@ import 'main.dart';
 
 // ==================== PlayerComponent ====================
 class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, CollisionCallbacks {
-  PlayerComponent()
+  PlayerComponent({required Weapon initialWeapon})
       : super(
           position: Vector2(100, 30),
           size: Vector2(16, 16),
           paint: Paint()..color = const Color(0xFF33CC33),
-        );
+        ) {
+    currentWeapon = initialWeapon;
+  }
     double maxHealth = 5;
     double currentHealth = 5;
     double maxShield = 3; // 최대 쉴드
@@ -56,7 +58,6 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
   void onLoad(){
     super.onLoad();
     add(RectangleHitbox()); //Hitbox 추가
-    equipWeapon(Rifle()); // 기본 무기로 라이플 장착
   }
 
 

@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flame/input.dart';
 import 'package:flutter_client/enemyManager.dart';
 import 'package:flutter_client/item_manager.dart';
+import 'package:flutter_client/weapon.dart';
+import 'package:flutter_client/weapon_selection_screen.dart';
 import 'player.dart';
 import 'projectile.dart';
 
@@ -16,6 +18,8 @@ class MyGame extends FlameGame with HasCollisionDetection {
   static bool isMovingLeft = false;
   static bool isMovingRight = false;
   static int score = 0;
+
+  final Weapon initialWeapon; // 시작 시 선택된 무기
 
   Vector2 lastDirection = Vector2(0, -1);
   late PlayerComponent player;
@@ -28,10 +32,12 @@ class MyGame extends FlameGame with HasCollisionDetection {
   final ValueNotifier<double> healthNotifier = ValueNotifier(0);
   final ValueNotifier<double> shieldNotifier = ValueNotifier(0);
 
+  MyGame({required this.initialWeapon}); // 생성자 수정
+
   @override
   Future<void> onLoad() async {
     super.onLoad();
-    player = PlayerComponent();
+    player = PlayerComponent(initialWeapon: initialWeapon); // 플레이어에게 무기 전달
     add(player);
 
     enemyManager = EnemyManager();
@@ -211,7 +217,7 @@ class GameBoyUI extends StatelessWidget {
                         Column(
                           children: [
                              ElevatedButton(
-                                onPressed: () => game.player.fire(), // 수정된 부분
+                                onPressed: () => game.player.fire(),
                                 child: const Text('A'),
                               ),
                               const SizedBox(height: 20),
@@ -236,8 +242,10 @@ class GameBoyUI extends StatelessWidget {
 
 
 // ==================== main ====================
-final myGame = MyGame();
-
 void main() {
-  runApp(GameBoyUI(game: myGame));
+  runApp(
+    const MaterialApp(
+      home: WeaponSelectionScreen(),
+    ),
+  );
 }
