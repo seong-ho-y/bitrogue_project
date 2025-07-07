@@ -8,7 +8,9 @@ import 'package:flutter_client/enemyManager.dart';
 import 'package:flutter_client/item_manager.dart';
 import 'package:flutter_client/weapon.dart';
 import 'package:flutter_client/weapon_selection_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'player.dart';
+
 import 'projectile.dart';
 
 // ==================== MyGame ====================
@@ -73,6 +75,26 @@ class MyGame extends FlameGame with HasCollisionDetection {
     speedNotifier.value = player.velocity.length / player.maxSpeed;
     healthNotifier.value = player.currentHealth / player.maxHealth;
     shieldNotifier.value = player.currentShield / player.maxShield;
+  }
+
+  void onPlayerDeath() async {
+    final prefs = await SharedPreferences.getInstance();
+    final highScore = prefs.getInt('highScore') ?? 0;
+
+    if (MyGame.score > highScore) {
+      await prefs.setInt('highScore', MyGame.score);
+      print('New high score: ${MyGame.score}');
+    }
+
+    // Reset score for the next game
+    MyGame.score = 0;
+
+    // Navigate back to the weapon selection screen
+    if (buildContext != null) {
+      Navigator.of(buildContext!).pushReplacement(
+        MaterialPageRoute(builder: (context) => const WeaponSelectionScreen()),
+      );
+    }
   }
 }
 
@@ -216,13 +238,26 @@ class GameBoyUI extends StatelessWidget {
                         // A/B Buttons
                         Column(
                           children: [
-                             ElevatedButton(
-                                onPressed: () => game.player.fire(),
-                                child: const Text('A'),
-                              ),
+                             GestureDetector(
+                               onTapDown: (_) => game.player.startCharge(),
+                               onTapUp: (_) => game.player.releaseCharge(),
+                               onTapCancel: () => game.player.releaseCharge(),
+                               child: Container(
+                                 width: 60, // 버튼 크기
+                                 height: 60,
+                                 decoration: BoxDecoration(
+                                   color: Colors.redAccent,
+                                   shape: BoxShape.circle,
+                                 ),
+                                 child: Center(
+                                   child: Text('A', style: TextStyle(fontSize: 24, color: Colors.white)),
+                                 ),
+                               ),
+                             ),
                               const SizedBox(height: 20),
-                              ElevatedButton(
-                                onPressed: () => game.player.dodge(),
+                              GestureDetector(
+                                onTapDown: (_) => game.player.dodge(),
+                                onTapUp: (_) => MyGame.score += 500,
                                 child: const Text('B'),
                               ),
                           ],
@@ -244,8 +279,8 @@ class GameBoyUI extends StatelessWidget {
 // ==================== main ====================
 void main() {
   runApp(
-    MaterialApp(
-      home: IntroScreen(),
+    const MaterialApp(
+      home: WeaponSelectionScreen(),
     ),
   );
 }

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy import create_engine, Column, String
+from sqlalchemy import create_engine, Column, String, Integer
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from pydantic import BaseModel
 from typing import List
@@ -33,6 +33,19 @@ class Item(ItemBase):
     class Config:
         orm_mode = True
 
+class WeaponBase(BaseModel):
+    code: str
+    name: str
+    description: str
+    unlock_score: int
+
+class WeaponCreate(WeaponBase):
+    pass
+
+class Weapon(WeaponBase):
+    class Config:
+        orm_mode = True
+
 
 # --- 3. SQLAlchemy 모델 (DB 테이블) 정의 ---
 # 데이터베이스의 'items' 테이블 구조를 정의하는 클래스입니다.
@@ -43,6 +56,13 @@ class DBItem(Base):
     description = Column(String)
     # effect는 "타입:값" 형태의 문자열로 효과를 저장합니다. (예: "health:1", "speed:20")
     effect = Column(String)
+
+class DBWeapon(Base):
+    __tablename__ = "weapons"
+    code = Column(String, primary_key=True, index=True)
+    name = Column(String, index=True)
+    description = Column(String)
+    unlock_score = Column(Integer)
 
 
 # --- 4. 데이터베이스 의존성 주입 ---
@@ -73,6 +93,18 @@ def on_startup():
         ]
         db.add_all(sample_items)
         db.commit()
+
+    if db.query(DBWeapon).count() == 0:
+        sample_weapons = [
+            DBWeapon(code="W001", name="Standard", description="A reliable standard-issue weapon.", unlock_score=0),
+            DBWeapon(code="W006", name="Shotgun", description="Fires multiple projectiles in a spread.", unlock_score=500),
+            DBWeapon(code="W002", name="Charge Shot", description="Hold to charge for a powerful blast.", unlock_score=1000),
+            DBWeapon(code="W003", name="Crack Shot", description="Splits into four projectiles mid-flight.", unlock_score=2000),
+            DBWeapon(code="W004", name="Laser", description="Pierces through multiple enemies.", unlock_score=3000),
+            DBWeapon(code="W005", name="Proximity Mine", description="Explodes after a short delay.", unlock_score=4000)
+        ]
+        db.add_all(sample_weapons)
+        db.commit()
     db.close()
 
 
@@ -88,6 +120,11 @@ def get_all_items(db: Session = Depends(get_db)):
     """
     items = db.query(DBItem).all()
     return items
+
+@app.get("/weapons", response_model=List[Weapon])
+def get_all_weapons(db: Session = Depends(get_db)):
+    weapons = db.query(DBWeapon).all()
+    return weapons
 
 # 특정 아이템을 코드로 조회하는 API (기존 코드 개선)
 @app.get("/item/{code}", response_model=Item)

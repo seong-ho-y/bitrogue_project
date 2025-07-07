@@ -1,11 +1,12 @@
 
+/*
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
-import 'main.dart';
 import 'dart:convert';
 
 import 'package:flutter_client/main.dart';
+import 'package:flutter_client/weapon_selection_screen.dart';
 
 class IntroScreen extends StatefulWidget {
   @override
@@ -72,3 +73,4 @@ class _IntroScreenState extends State<IntroScreen> {
     );
   }
 }
+*/

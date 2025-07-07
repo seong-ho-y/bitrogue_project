@@ -31,6 +31,7 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
     // 무기 관련 변수
     late Weapon currentWeapon;
     double _timeSinceLastAttack = 0.0;
+    double _chargeStartTime = 0.0; // 차지 시작 시간
 
     // 이동 관련 변수 (관성 적용)
     Vector2 velocity = Vector2.zero();
@@ -126,11 +127,22 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
   }
 
   /// 무기 발사
-  void fire() {
+  void fire({double chargeTime = 0.0}) {
     if (_timeSinceLastAttack >= currentWeapon.coolDown) {
-      currentWeapon.attack(game, position.clone(), game.lastDirection.clone());
+      currentWeapon.attack(game, position.clone(), game.lastDirection.clone(), chargeTime: chargeTime);
       _timeSinceLastAttack = 0.0;
     }
+  }
+
+  /// 차지 시작
+  void startCharge() {
+    _chargeStartTime = game.currentTime();
+  }
+
+  /// 차지 해제 및 발사
+  void releaseCharge() {
+    final chargeTime = game.currentTime() - _chargeStartTime;
+    fire(chargeTime: chargeTime);
   }
 
   /// 무기 교체
@@ -202,6 +214,8 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
   /// 사망 처리
   void die() {
     print('플레이어 사망');
+    game.onPlayerDeath(); // 게임 오버 로직을 MyGame 클래스에 위임
+    removeFromParent(); // 플레이어 객체 제거
   }
   
   void vibrateOnHit() async {

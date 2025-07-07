@@ -17,7 +17,7 @@ abstract class Weapon {
 
   /// 공격을 수행하는 메소드.
   /// 각 무기는 이 메소드를 자신만의 방식으로 구현해야 합니다.
-  void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection);
+  void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0});
 }
 
 
@@ -28,7 +28,7 @@ class Rifle extends Weapon {
   Rifle() : super(name: 'Rifle', coolDown: 0.4);
 
   @override
-  void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection) {
+  void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0}) {
     // 긴 사정거리를 가진 발사체를 생성합니다.
     game.add(ProjectileComponent(playerPosition, playerDirection, lifeSpan: 1.0));
     print("Rifle fired!");
@@ -40,7 +40,7 @@ class Shotgun extends Weapon {
   Shotgun() : super(name: 'Shotgun', coolDown: 0.8);
 
   @override
-  void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection) {
+  void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0}) {
     const int bulletCount = 5;
     const double spreadAngle = pi / 8; // 22.5도
 
@@ -57,5 +57,66 @@ class Shotgun extends Weapon {
       ));
     }
     print("Shotgun fired!");
+  }
+}
+
+/// 차지 시간에 따라 발사체 위력이 강해지는 차지샷 클래스입니다.
+class ChargeShot extends Weapon {
+  ChargeShot() : super(name: 'Charge Shot', coolDown: 0.5);
+
+  @override
+  void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0}) {
+    double damage = 1.0;
+    Vector2 size = Vector2(8, 8);
+    double lifeSpan = 1.2;
+
+    if (chargeTime >= 1.5) { // 3단계 (1.5초 이상)
+      damage = 3.0;
+      size = Vector2(24, 24);
+      lifeSpan = 2.0;
+      print("Charge Shot Level 3!");
+    } else if (chargeTime >= 0.7) { // 2단계 (0.7초 이상)
+      damage = 2.0;
+      size = Vector2(16, 16);
+      lifeSpan = 1.6;
+      print("Charge Shot Level 2!");
+    } else { // 1단계 (기본)
+      print("Charge Shot Level 1!");
+    }
+
+    game.add(ProjectileComponent(playerPosition, playerDirection, lifeSpan: lifeSpan, type: ProjectileType.standard, damage: damage, size: size));
+  }
+}
+
+/// 일정 거리 이동 후 4방향으로 분열되는 크랙샷 클래스입니다.
+class CrackShot extends Weapon {
+  CrackShot() : super(name: 'Crack Shot', coolDown: 0.7);
+
+  @override
+  void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0}) {
+    game.add(ProjectileComponent(playerPosition, playerDirection, lifeSpan: 0.8, type: ProjectileType.crack));
+    print("Crack Shot fired!");
+  }
+}
+
+/// 적을 관통하는 레이저 클래스입니다.
+class Laser extends Weapon {
+  Laser() : super(name: 'Laser', coolDown: 1.0);
+
+  @override
+  void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0}) {
+    game.add(ProjectileComponent(playerPosition, playerDirection, lifeSpan: 1.5, type: ProjectileType.laser));
+    print("Laser fired!");
+  }
+}
+
+/// 짧은 사정거리를 가지고, 일정 시간 후 폭발하는 기폭탄 클래스입니다.
+class ProximityMine extends Weapon {
+  ProximityMine() : super(name: 'Proximity Mine', coolDown: 1.2);
+
+  @override
+  void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0}) {
+    game.add(ProjectileComponent(playerPosition, playerDirection, lifeSpan: 2.0, type: ProjectileType.mine));
+    print("Proximity Mine fired!");
   }
 }
