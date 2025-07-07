@@ -244,8 +244,8 @@ class GameBoyUI extends StatelessWidget {
 // ==================== main ====================
 void main() {
   runApp(
-    const MaterialApp(
-      home: WeaponSelectionScreen(),
+    MaterialApp(
+      home: IntroScreen(),
     ),
   );
 }
