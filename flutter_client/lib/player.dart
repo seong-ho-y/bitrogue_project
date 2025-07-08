@@ -28,6 +28,9 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
     double maxShield = 3; // 최대 쉴드
     double currentShield = 3; // 현재 쉴드
 
+    // 획득한 아이템 코드 목록
+    List<String> collectedItemCodes = [];
+
     // 무기 관련 변수
     late Weapon currentWeapon;
     double _timeSinceLastAttack = 0.0;
@@ -238,6 +241,7 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
   // 아이템 효과를 적용하는 함수
   void _applyItemEffect(Item item) {
     print('Picked up item: ${item.name} (${item.description})');
+    collectedItemCodes.add(item.code); // 획득한 아이템 코드 추가
 
     // 아이템 효과 문자열을 ':' 기준으로 분리 (예: "health:1")
     final parts = item.effect.split(':');

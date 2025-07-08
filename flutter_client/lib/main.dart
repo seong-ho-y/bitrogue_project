@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
@@ -86,8 +87,35 @@ class MyGame extends FlameGame with HasCollisionDetection {
       print('New high score: ${MyGame.score}');
     }
 
+    // Send score and collected items to the server
+    final collectedItemsString = player.collectedItemCodes.join(',');
+    final currentWeaponCode = player.currentWeapon.code; // Assuming Weapon has a 'code' property
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:8000/scores?user_id=1'), // TODO: Replace with actual user_id
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'score': MyGame.score,
+          'weapon': currentWeaponCode,
+          'items': collectedItemsString,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Score and items submitted successfully!');
+      } else {
+        print('Failed to submit score and items: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error submitting score and items: $e');
+    }
+
     // Reset score for the next game
     MyGame.score = 0;
+    player.collectedItemCodes.clear(); // Clear collected items for the next game
 
     // Navigate back to the weapon selection screen
     if (buildContext != null) {

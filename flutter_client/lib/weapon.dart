@@ -6,6 +6,8 @@ import 'package:flutter_client/projectile.dart';
 /// 모든 무기 클래스의 기반이 되는 추상 클래스입니다.
 /// 스트래티지 패턴의 '전략' 역할을 합니다.
 abstract class Weapon {
+  /// 무기 코드
+  final String code;
   /// 무기 이름
   final String name;
   /// 공격 후 다음 공격까지의 딜레이 (초)
@@ -13,7 +15,7 @@ abstract class Weapon {
   /// 마지막으로 공격한 시간
   double lastAttackTime = 0.0;
 
-  Weapon({required this.name, required this.coolDown});
+  Weapon({required this.code, required this.name, required this.coolDown});
 
   /// 공격을 수행하는 메소드.
   /// 각 무기는 이 메소드를 자신만의 방식으로 구현해야 합니다.
@@ -25,7 +27,7 @@ abstract class Weapon {
 
 /// 가장 기본적인 무기인 라이플 클래스입니다.
 class Rifle extends Weapon {
-  Rifle() : super(name: 'Rifle', coolDown: 0.4);
+  Rifle() : super(code: 'W001', name: 'Rifle', coolDown: 0.4);
 
   @override
   void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0}) {
@@ -37,7 +39,7 @@ class Rifle extends Weapon {
 
 /// 5발을 동시에 발사하지만 사정거리가 짧은 샷건 클래스입니다.
 class Shotgun extends Weapon {
-  Shotgun() : super(name: 'Shotgun', coolDown: 0.8);
+  Shotgun() : super(code: 'W006', name: 'Shotgun', coolDown: 0.8);
 
   @override
   void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0}) {
@@ -62,7 +64,7 @@ class Shotgun extends Weapon {
 
 /// 차지 시간에 따라 발사체 위력이 강해지는 차지샷 클래스입니다.
 class ChargeShot extends Weapon {
-  ChargeShot() : super(name: 'Charge Shot', coolDown: 0.5);
+  ChargeShot() : super(code: 'W002', name: 'Charge Shot', coolDown: 0.5);
 
   @override
   void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0}) {
@@ -90,7 +92,7 @@ class ChargeShot extends Weapon {
 
 /// 일정 거리 이동 후 4방향으로 분열되는 크랙샷 클래스입니다.
 class CrackShot extends Weapon {
-  CrackShot() : super(name: 'Crack Shot', coolDown: 0.7);
+  CrackShot() : super(code: 'W003', name: 'Crack Shot', coolDown: 0.7);
 
   @override
   void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0}) {
@@ -101,7 +103,7 @@ class CrackShot extends Weapon {
 
 /// 적을 관통하는 레이저 클래스입니다.
 class Laser extends Weapon {
-  Laser() : super(name: 'Laser', coolDown: 1.0);
+  Laser() : super(code: 'W004', name: 'Laser', coolDown: 1.0);
 
   @override
   void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0}) {
@@ -112,7 +114,7 @@ class Laser extends Weapon {
 
 /// 짧은 사정거리를 가지고, 일정 시간 후 폭발하는 기폭탄 클래스입니다.
 class ProximityMine extends Weapon {
-  ProximityMine() : super(name: 'Proximity Mine', coolDown: 1.2);
+  ProximityMine() : super(code: 'W005', name: 'Proximity Mine', coolDown: 1.2);
 
   @override
   void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0}) {

@@ -101,6 +101,7 @@ def create_user(token: str, db: Session = Depends(get_db)):
 
 @app.post("/scores", response_model=Score)
 def create_score(score: ScoreCreate, user_id: int, db: Session = Depends(get_db)):
+    print(f"Received score submission for user {user_id}: Score={score.score}, Weapon={score.weapon}, Items={score.items}")
     db_score = ScoreModel(**score.dict(), user_id=user_id)
     db.add(db_score)
     db.commit()
