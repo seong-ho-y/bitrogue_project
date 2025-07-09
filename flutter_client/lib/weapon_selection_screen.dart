@@ -50,7 +50,7 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
   Future<Map<String, dynamic>> _loadGameData() async {
     try {
       // 1. Fetch weapons from the server
-      final response = await http.get(Uri.parse('http://192.168.45.183:8001/weapons'));
+      final response = await http.get(Uri.parse('http://192.168.45.81:8001/weapons'));
       if (response.statusCode != 200) {
         throw Exception('Failed to load weapons from server');
       }
@@ -76,6 +76,7 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
   }
 
   // WeaponInfo.code를 기반으로 실제 Weapon 객체를 생성하는 헬퍼 함수
+
   Weapon _createWeaponFromInfo(WeaponInfo info) {
     switch (info.code) {
       case 'W001':
@@ -88,6 +89,8 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
         return Laser();
       case 'W005':
         return ProximityMine();
+      case 'W006':
+        return Shotgun();
       default:
         return Rifle(); // 기본값
     }
@@ -189,7 +192,7 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
                   // 게임 시작 버튼
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
+                      backgroundColor: const Color.fromARGB(255, 124, 242, 81),
                       padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                     ),
                     onPressed: _selectedWeaponInfo == null ? null : () {

@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'player.dart';
 
 import 'projectile.dart';
+import 'package:flutter_client/score_screen.dart';
 
 // ==================== MyGame ====================
 class MyGame extends FlameGame with HasCollisionDetection {
@@ -70,21 +71,22 @@ class MyGame extends FlameGame with HasCollisionDetection {
   @override
   void update(double dt) {
     super.update(dt);
-    _scoreText.text = 'Score: ${MyGame.score}';
+    // 점수 업데이튼
+    _scoreText.text = 'Score: $score';
 
-    // Update notifiers
+    // 플레이어 상태 업데이트
     speedNotifier.value = player.velocity.length / player.maxSpeed;
     healthNotifier.value = player.currentHealth / player.maxHealth;
     shieldNotifier.value = player.currentShield / player.maxShield;
   }
 
-  void onPlayerDeath() async {
+  void onPlayerDeath() async {  //플레이어 죽었을 때
     final prefs = await SharedPreferences.getInstance();
     final highScore = prefs.getInt('highScore') ?? 0;
 
-    if (MyGame.score > highScore) {
-      await prefs.setInt('highScore', MyGame.score);
-      print('New high score: ${MyGame.score}');
+    if (score > highScore) {
+      await prefs.setInt('highScore', score);
+      print('New high score: $score');
     }
 
     // Send score and collected items to the server
@@ -93,12 +95,12 @@ class MyGame extends FlameGame with HasCollisionDetection {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8000/scores?user_id=1'), // TODO: Replace with actual user_id
+        Uri.parse('http://192.168.45.81:8000/scores?user_id=1'), // TODO: Replace with actual user_id
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
         body: jsonEncode(<String, dynamic>{
-          'score': MyGame.score,
+          'score': score,
           'weapon': currentWeaponCode,
           'items': collectedItemsString,
         }),
@@ -114,19 +116,26 @@ class MyGame extends FlameGame with HasCollisionDetection {
     }
 
     // Reset score for the next game
-    MyGame.score = 0;
+    score = 0;
     player.collectedItemCodes.clear(); // Clear collected items for the next game
 
     // Navigate back to the weapon selection screen
     if (buildContext != null) {
       Navigator.of(buildContext!).pushReplacement(
-        MaterialPageRoute(builder: (context) => const WeaponSelectionScreen()),
+        MaterialPageRoute(
+          builder: (context) => ScoreScreen(
+            score: score,
+            highScore: highScore,
+            weaponName: player.currentWeapon.name,
+            collectedItems: collectedItemsString,
+          ),
+        ),
       );
     }
   }
 }
 
-// ==================== GaugeWidget ====================
+// ==================== 무기 선택 스크린 ====================
 class GaugeWidget extends StatelessWidget {
   final String label;
   final double value;
@@ -166,6 +175,7 @@ class GaugeWidget extends StatelessWidget {
 
 
 // ==================== GameBoyUI ====================
+// 원래는 GameBoyUI로 만들었지만 메카물 형식의 디자인 UI로 바뀜
 class GameBoyUI extends StatelessWidget {
   final MyGame game;
   const GameBoyUI({super.key, required this.game});
@@ -286,7 +296,7 @@ class GameBoyUI extends StatelessWidget {
                               GestureDetector(
                                 onTapDown: (_) => game.player.dodge(),
                                 onTapUp: (_) => MyGame.score += 500,
-                                child: const Text('B'),
+                                child: const Text('B'), //Container로 좀 더 확장
                               ),
                           ],
                         ),
