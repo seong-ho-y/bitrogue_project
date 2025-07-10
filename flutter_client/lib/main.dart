@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter_client/intro_screen.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:flame/components.dart';
@@ -317,8 +318,8 @@ class GameBoyUI extends StatelessWidget {
 // ==================== main ====================
 void main() {
   runApp(
-    const MaterialApp(
-      home: WeaponSelectionScreen(),
+    MaterialApp(
+      home: IntroScreen(),
     ),
   );
 }

@@ -75,7 +75,7 @@ class ScoreModel(Base):
 Base.metadata.create_all(bind=engine)
 
 # 4. API Endpoints
-CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID" # TODO: Replace with your Google Client ID
+CLIENT_ID = "569377590166-2mml97i6m2o1f0b7inagaksf47v8s0kg.apps.googleusercontent.com" # TODO: Replace with your Google Client ID
 
 @app.post("/users", response_model=User)
 def create_user(token: str, db: Session = Depends(get_db)):

@@ -1,5 +1,4 @@
 
-/*
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
@@ -14,7 +13,10 @@ class IntroScreen extends StatefulWidget {
 }
 
 class _IntroScreenState extends State<IntroScreen> {
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email'],
+    serverClientId: "569377590166-2mml97i6m2o1f0b7inagaksf47v8s0kg.apps.googleusercontent.com",
+  );
 
   Future<void> _handleSignIn() async {
     try {
@@ -73,4 +75,3 @@ class _IntroScreenState extends State<IntroScreen> {
     );
   }
 }
-*/
