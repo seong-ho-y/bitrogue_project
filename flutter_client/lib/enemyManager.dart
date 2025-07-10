@@ -27,12 +27,36 @@ class EnemyManager extends Component with HasGameReference {
     final x = random.nextDouble() * game.size.x;
     final y = random.nextDouble() * game.size.y / 2; // 위쪽 절반에 스폰
 
-    final enemy = EnemyBaseComponent(
-      maxHealth: 5,
-      moveSpeed: 70,
-      position: Vector2(x, y),
-      size: Vector2(16, 16),
-    );
+    final type = random.nextInt(4);
+    EnemyBaseComponent enemy;
+
+    switch (type) {
+      case 0:
+        enemy = EnemyBaseComponent(
+          maxHealth: 5,
+          moveSpeed: 70,
+          position: Vector2(x, y),
+          size: Vector2(16, 16),
+        );
+        break;
+      case 1:
+        enemy = RunnerEnemy(position: Vector2(x, y));
+        break;
+      case 2:
+        enemy = RangerEnemy(position: Vector2(x, y));
+        break;
+      case 3:
+        enemy = SummonerEnemy(position: Vector2(x, y));
+        break;
+      default:
+        enemy = EnemyBaseComponent(
+          maxHealth: 5,
+          moveSpeed: 70,
+          position: Vector2(x, y),
+          size: Vector2(16, 16),
+        );
+        break;
+    }
 
     game.add(enemy);
   }
