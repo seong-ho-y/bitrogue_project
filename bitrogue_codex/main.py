@@ -3,6 +3,7 @@ from sqlalchemy import create_engine, Column, String, Integer, Float
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from pydantic import BaseModel
 from typing import List
+import requests
 
 app = FastAPI()
 
@@ -156,4 +157,18 @@ def add_item(item: ItemCreate, db: Session = Depends(get_db)):
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
+
+    # Log item pickup to bitrogue_server
+    try:
+        log_data = {
+            "item_code": db_item.code,
+            "user_id": 1,  # Placeholder: Replace with actual user ID from game context
+            "score_at_pickup": 0 # Placeholder: Replace with actual score from game context
+        }
+        requests.post("http://localhost:8000/log_item_pickup", json=log_data)
+    except requests.exceptions.ConnectionError as e:
+        print(f"Could not connect to bitrogue_server: {e}")
+    except Exception as e:
+        print(f"An error occurred while logging item pickup: {e}")
+
     return db_item

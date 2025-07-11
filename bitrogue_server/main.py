@@ -51,6 +51,18 @@ class Score(ScoreCreate):
     class Config:
         orm_mode = True
 
+class ItemPickupLog(BaseModel):
+    item_code: str
+    user_id: int
+    score_at_pickup: int
+
+class ItemPickupLogResponse(ItemPickupLog):
+    id: int
+    timestamp: datetime
+
+    class Config:
+        orm_mode = True
+
 # 5. SQLAlchemy Models (Database Tables)
 class UserModel(Base):
     __tablename__ = "users"
@@ -70,6 +82,14 @@ class ScoreModel(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("UserModel", back_populates="scores")
+
+class ItemPickupLogModel(Base):
+    __tablename__ = "item_pickup_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    item_code = Column(String, index=True)
+    user_id = Column(Integer, index=True)
+    score_at_pickup = Column(Integer)
+    timestamp = Column(DateTime, default=datetime.utcnow)
 
 # 6. Create Database Tables
 Base.metadata.create_all(bind=engine)
@@ -134,3 +154,11 @@ def get_user_high_score(user_id: int, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user.high_score
+
+@app.post("/log_item_pickup", response_model=ItemPickupLogResponse, status_code=status.HTTP_201_CREATED)
+def log_item_pickup(log: ItemPickupLog, db: Session = Depends(get_db)):
+    db_log = ItemPickupLogModel(**log.dict())
+    db.add(db_log)
+    db.commit()
+    db.refresh(db_log)
+    return db_log
