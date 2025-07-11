@@ -122,6 +122,16 @@ class ProjectileComponent extends RectangleComponent with HasGameReference<MyGam
 
   // 기폭탄 폭발 로직
   void _explode() {
-    
+    final explosionRadius = 100.0; // 폭발 반경 설정
+    final center = position + size / 2; // 발사체의 중심점
+
+    // 적 찾기
+    game.children.whereType<EnemyBaseComponent>().forEach((enemy) {
+      final enemyCenter = enemy.position + enemy.size / 2;
+      // 적이 폭발 반경 내에 있는지 확인
+      if (center.distanceTo(enemyCenter) <= explosionRadius) {
+        enemy.takeDamage(damage); // 적에게 데미지 적용
+      }
+    });
   }
 }
