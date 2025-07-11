@@ -1,27 +1,34 @@
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'package:flutter_client/weapon_selection_screen.dart';
-import 'package:flutter_client/register_screen.dart';
-
-class IntroScreen extends StatefulWidget {
+class RegisterScreen extends StatefulWidget {
   @override
-  _IntroScreenState createState() => _IntroScreenState();
+  _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _IntroScreenState extends State<IntroScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
   String? _errorMessage;
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleRegister() async {
     final username = _usernameController.text;
     final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
 
     if (username.isEmpty || password.isEmpty) {
       setState(() {
-        _errorMessage = 'Please enter both username and password';
+        _errorMessage = 'Please fill in all fields';
+      });
+      return;
+    }
+
+    if (password != confirmPassword) {
+      setState(() {
+        _errorMessage = 'Passwords do not match';
       });
       return;
     }
@@ -32,7 +39,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.45.245:8000/login'), // Updated endpoint
+        Uri.parse('http://192.168.45.245:8000/register'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -42,38 +49,32 @@ class _IntroScreenState extends State<IntroScreen> {
         }),
       );
 
-      if (response.statusCode == 200) {
-        // On successful login, navigate to the weapon selection screen
-        // You might want to save the user data (e.g., user ID) for later use
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const WeaponSelectionScreen()),
+      if (response.statusCode == 201) {
+        // On successful registration, pop back to the login screen
+        // and show a success message.
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration successful! Please log in.')),
         );
       } else {
-        // Handle login failure
+        // Handle registration failure
         final responseBody = jsonDecode(response.body);
         setState(() {
-          _errorMessage = responseBody['detail'] ?? 'Failed to log in';
+          _errorMessage = responseBody['detail'] ?? 'Failed to register';
         });
       }
     } catch (e) {
       setState(() {
         _errorMessage = 'Could not connect to the server. Please try again later.';
       });
-      print('Error during login: $e');
+      print('Error during registration: $e');
     }
-  }
-
-  void _navigateToRegister() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => RegisterScreen()),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: Text('Register')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -81,10 +82,10 @@ class _IntroScreenState extends State<IntroScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text(
-                'BitRogue',
-                style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                'Create Account',
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 40),
+              SizedBox(height: 30),
               if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
@@ -104,24 +105,28 @@ class _IntroScreenState extends State<IntroScreen> {
               SizedBox(height: 20),
               TextField(
                 controller: _passwordController,
-                obscureText: true, // Hide password
+                obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Password',
                   border: OutlineInputBorder(),
                 ),
               ),
+              SizedBox(height: 20),
+              TextField(
+                controller: _confirmPasswordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Confirm Password',
+                  border: OutlineInputBorder(),
+                ),
+              ),
               SizedBox(height: 30),
               ElevatedButton(
-                onPressed: _handleLogin,
+                onPressed: _handleRegister,
                 style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50), // Full width
+                  minimumSize: Size(double.infinity, 50),
                 ),
-                child: Text('Login', style: TextStyle(fontSize: 18)),
-              ),
-              SizedBox(height: 10),
-              TextButton(
-                onPressed: _navigateToRegister,
-                child: Text('Don\'t have an account? Register'),
+                child: Text('Register', style: TextStyle(fontSize: 18)),
               ),
             ],
           ),

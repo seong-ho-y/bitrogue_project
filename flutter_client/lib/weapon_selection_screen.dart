@@ -50,7 +50,7 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
   Future<Map<String, dynamic>> _loadGameData() async {
     try {
       // 1. Fetch weapons from the server
-      final response = await http.get(Uri.parse('http://192.168.45.81:8001/weapons'));
+      final response = await http.get(Uri.parse('http://192.168.45.245:8001/weapons'));
       if (response.statusCode != 200) {
         throw Exception('Failed to load weapons from server');
       }

@@ -1,4 +1,5 @@
 fastapi
 uvicorn
 sqlalchemy
-google-auth
+requests
+passlib[bcrypt]
