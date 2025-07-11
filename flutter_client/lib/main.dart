@@ -315,7 +315,6 @@ class GameBoyUI extends StatelessWidget {
                               const SizedBox(height: 20),
                               GestureDetector(
                                 onTapDown: (_) => game.player.dodge(),
-                                onTapUp: (_) => MyGame.score += 500,
                                 child: const Text('B'), //Container로 좀 더 확장
                               ),
                           ],

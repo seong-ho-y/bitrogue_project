@@ -51,14 +51,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (response.statusCode == 201) {
-        // On successful registration, pop back to the login screen
-        // and show a success message.
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Registration successful! Please log in.')),
         );
       } else {
-        // Handle registration failure
         final responseBody = jsonDecode(response.body);
         setState(() {
           _errorMessage = responseBody['detail'] ?? 'Failed to register';

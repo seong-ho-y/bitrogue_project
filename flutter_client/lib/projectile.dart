@@ -10,9 +10,9 @@ import 'main.dart';
 // 발사체 타입을 정의하는 열거형
 enum ProjectileType {
   standard,
-  crack, // 분열탄
-  laser,   // 관통탄
-  mine,    // 기폭탄
+  crack,
+  laser,
+  mine,
 }
 
 // ==================== ProjectileComponent ====================
@@ -97,7 +97,7 @@ class ProjectileComponent extends RectangleComponent with HasGameReference<MyGam
     super.onCollision(intersectionPoints, other);
 
     if (other is EnemyBaseComponent) {
-      other.takeDamage(damage); // 수정: 고정 데미지 1 대신 damage 변수 사용
+      other.takeDamage(damage); //데미지 주기
       if (type != ProjectileType.laser) {
         // 레이저가 아니면 충돌 시 사라짐
         removeFromParent();
@@ -117,12 +117,11 @@ class ProjectileComponent extends RectangleComponent with HasGameReference<MyGam
         lifeSpan: lifeSpan / 2, // 남은 수명
       ));
     }
-    removeFromParent(); // 원본은 제거
+    removeFromParent(); // 원본 제거
   }
 
   // 기폭탄 폭발 로직
   void _explode() {
-    // TODO: 폭발 효과 (예: 주변 적에게 데미지) 구현 필요
-    print("Boom!");
+    
   }
 }

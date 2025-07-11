@@ -235,7 +235,7 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
       EffectController(duration: dodgeDuration, curve: Curves.easeOut),
       onComplete: () {
         isDodging = false;
-        // 닷지 후 무적은 dodgeDuration만큼만 유지되므로 isInvincible을 여기서 false로 바꿀 필요 없음.
+        // 닷지 후 무적은 dodgeDuration만큼만 유지되므로 isInvincible을 여기서 false로 바꿀 필요 없음
       },
     ));
   }

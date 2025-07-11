@@ -1,12 +1,10 @@
 import 'dart:math';
 import 'package:flame/components.dart';
-import 'package:flutter/foundation.dart'; // Add this line
+import 'package:flutter/foundation.dart';
 import 'package:flutter_client/main.dart';
 import 'package:flutter_client/projectile.dart';
 
-/// 모든 무기 클래스의 기반이 되는 추상 클래스입니다.
-/// 스트래티지 패턴의 '전략' 역할을 합니다.
-abstract class Weapon {
+abstract class Weapon { //추상클래스로 해서 구체화 할거임
   /// 무기 코드
   final String code;
   /// 무기 이름
@@ -29,13 +27,12 @@ abstract class Weapon {
   double lastAttackTime = 0.0;
 
   Weapon({required this.code, required this.name, required this.coolDown, required this.maxAmmo, required this.reloadTime})
-      : currentAmmoNotifier = ValueNotifier(maxAmmo); // Initialize currentAmmoNotifier to maxAmmo
+      : currentAmmoNotifier = ValueNotifier(maxAmmo);
 
-  /// 공격을 수행하는 메소드.
-  /// 각 무기는 이 메소드를 자신만의 방식으로 구현해야 합니다.
+  /// 공격
   void attack(MyGame game, Vector2 playerPosition, Vector2 playerDirection, {double chargeTime = 0.0});
 
-  /// 재장전을 시작하는 메소드
+  /// 재장전 시작하
   void startReload() {
     if (!isReloading) {
       isReloading = true;
@@ -44,7 +41,7 @@ abstract class Weapon {
     }
   }
 
-  /// 재장전 상태를 업데이트하는 메소드
+  /// 재장전 상태 업데이트
   void updateReload(double dt) {
     if (isReloading) {
       reloadTimer -= dt;
@@ -62,9 +59,9 @@ abstract class Weapon {
 }
 
 
-// ==================== 구체적인 무기 구현 ====================
+// ==================== 구체적인 무기 구현 가보자 ====================
 
-/// 가장 기본적인 무기인 라이플 클래스입니다.
+//라이플 클래스
 class Rifle extends Weapon {
   Rifle() : super(code: 'W001', name: 'Rifle', coolDown: 0.01, maxAmmo: 100, reloadTime: 2.0);
 
@@ -85,7 +82,7 @@ class Rifle extends Weapon {
   }
 }
 
-/// 5발을 동시에 발사하지만 사정거리가 짧은 샷건 클래스입니다.
+//샷건 클래스
 class Shotgun extends Weapon {
   Shotgun() : super(code: 'W006', name: 'Shotgun', coolDown: 0.4, maxAmmo: 10, reloadTime: 3.0);
 
@@ -118,7 +115,7 @@ class Shotgun extends Weapon {
   }
 }
 
-/// 차지 시간에 따라 발사체 위력이 강해지는 차지샷 클래스입니다.
+//차지샷 클래스
 class ChargeShot extends Weapon {
   ChargeShot() : super(code: 'W002', name: 'Charge Shot', coolDown: 0.3, maxAmmo: 5, reloadTime: 4.0);
 
@@ -157,7 +154,7 @@ class ChargeShot extends Weapon {
   }
 }
 
-/// 일정 거리 이동 후 4방향으로 분열되는 크랙샷 클래스입니다.
+// 4방향으로 분열되는 크랙샷 클래스
 class CrackShot extends Weapon {
   CrackShot() : super(code: 'W003', name: 'Crack Shot', coolDown: 0.2, maxAmmo: 15, reloadTime: 3.5);
 
@@ -178,7 +175,7 @@ class CrackShot extends Weapon {
   }
 }
 
-/// 적을 관통하는 레이저 클래스입니다.
+// 레이저 클래스
 class Laser extends Weapon {
   Laser() : super(code: 'W004', name: 'Laser', coolDown: 0.3, maxAmmo: 20, reloadTime: 5.0);
 
@@ -199,7 +196,7 @@ class Laser extends Weapon {
   }
 }
 
-/// 짧은 사정거리를 가지고, 일정 시간 후 폭발하는 기폭탄 클래스입니다.
+// 기폭탄 클래스
 class ProximityMine extends Weapon {
   ProximityMine() : super(code: 'W005', name: 'Proximity Mine', coolDown: 0.7, maxAmmo: 3, reloadTime: 2.5);
 

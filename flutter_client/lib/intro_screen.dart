@@ -34,7 +34,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('${AppConstants.baseUrl}/login'), // Updated endpoint
+        Uri.parse('${AppConstants.baseUrl}/login'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -47,12 +47,12 @@ class _IntroScreenState extends State<IntroScreen> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> userData = jsonDecode(response.body);
         final int userId = userData['id'];
-        print('Logged in user ID: $userId'); // Debug print
+        print('Logged in user ID: $userId');
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('userId', userId);
 
-        // On successful login, navigate to the weapon selection screen
+       
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const WeaponSelectionScreen()),

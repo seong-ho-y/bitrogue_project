@@ -65,7 +65,7 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
 
     if (userId == null) {
       print('Error: User ID not found for fetching high score.');
-      return 0; // Or throw an error, or navigate to login
+      return 0;
     }
 
     try {
@@ -88,7 +88,7 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
   // 서버에서 무기 목록을 가져오고, 로컬에서 최고 점수를 불러오는 비동기 함수
   Future<Map<String, dynamic>> _loadGameData() async {
     try {
-      // 1. Fetch weapons from the server
+      // 1. 무기 가져오기
       final response = await http.get(Uri.parse('${AppConstants.codexBaseUrl}/weapons'));
       if (response.statusCode != 200) {
         throw Exception('Failed to load weapons from server');
@@ -96,10 +96,10 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
       final List<dynamic> weaponsJson = json.decode(utf8.decode(response.bodyBytes));
       final List<WeaponInfo> weapons = weaponsJson.map((json) => WeaponInfo.fromJson(json)).toList();
 
-      // 2. Fetch high score from the server
+      // 2. HighScore 가져오기
       _userHighScore = await _fetchUserHighScore();
       
-      // 3. Set default selected weapon if null
+      // 3. 선택된 무기 없을 때
       if (_selectedWeaponInfo == null) {
           final firstUnlockedWeapon = weapons.firstWhere((w) => _userHighScore >= w.unlockScore, orElse: () => weapons.first);
           _selectedWeaponInfo = firstUnlockedWeapon;
@@ -113,7 +113,7 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
     }
   }
 
-  // WeaponInfo.code를 기반으로 실제 Weapon 객체를 생성하는 헬퍼 함수
+  // WeaponInfo.code를 기반으로 실제 Weapon 객체를 생성
   Weapon _createWeaponFromInfo(WeaponInfo info) {
     switch (info.code) {
       case 'W001':
@@ -165,14 +165,12 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
 
             return Stack(
               children: [
-                // Background Image/Animation (Placeholder)
                 Positioned.fill(
                   child: Image.network(
-                    'https://via.placeholder.com/800x600.png?text=Hangar+Background', // Placeholder image
+                    'https://via.placeholder.com/800x600.png?text=Hangar+Background',
                     fit: BoxFit.cover,
                   ),
                 ),
-                // Overlay for dimming/effects
                 Positioned.fill(
                   child: Container(
                     color: Colors.black.withOpacity(0.6),
@@ -181,7 +179,7 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
                 // Main Content
                 Column(
                   children: [
-                    // Top Section: Title and High Score
+                    //타이틀, 하이스코어
                     Padding(
                       padding: const EdgeInsets.only(top: 60.0, bottom: 20.0),
                       child: Column(
@@ -206,7 +204,7 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
                         ],
                       ),
                     ),
-                    // Weapon Slider
+                    // 무기 교체 슬라이더
                     Expanded(
                       child: PageView.builder(
                         controller: _pageController,
