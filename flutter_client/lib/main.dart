@@ -41,7 +41,7 @@ class MyGame extends FlameGame with HasCollisionDetection {
   final ValueNotifier<double> shieldNotifier = ValueNotifier(0);
 
   MyGame({required this.initialWeapon})
-      : currentWeaponNotifier = ValueNotifier(initialWeapon); // Initialize here
+      : currentWeaponNotifier = ValueNotifier(initialWeapon);
 
   @override
   Future<void> onLoad() async {
@@ -232,16 +232,6 @@ class GameBoyUI extends StatelessWidget {
                           valueListenable: game.speedNotifier,
                           builder: (context, value, child) {
                             return GaugeWidget(label: "SPEED", value: value, color: Colors.cyan);
-                          },
-                        ),
-                        // Ammo Display
-                        ValueListenableBuilder<Weapon>(
-                          valueListenable: game.currentWeaponNotifier,
-                          builder: (context, weapon, child) {
-                            return Text(
-                              'AMMO: ${weapon.currentAmmoNotifier.value}/${weapon.maxAmmo}',
-                              style: const TextStyle(color: Colors.white, fontSize: 16),
-                            );
                           },
                         ),
                         // Health and Shield Gauges

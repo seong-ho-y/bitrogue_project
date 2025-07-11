@@ -149,7 +149,7 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
   /// 무기 발사
   void fire({double chargeTime = 0.0}) {
     if (currentWeapon.isReloading) return; // Cannot fire while reloading
-    if (currentWeapon.currentAmmo <= 0) {
+    if (currentWeapon.currentAmmoNotifier.value <= 0) {
       currentWeapon.startReload();
       return;
     }
