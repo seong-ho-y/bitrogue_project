@@ -7,19 +7,20 @@ import requests
 
 app = FastAPI()
 
-# --- 1. 데이터베이스 설정 ---
-# 데이터베이스 파일 경로를 지정합니다. SQLite를 사용합니다.
+# --- 데이터베이스 설정 ---
+# 데이터베이스 파일 경로, SqLite
 DATABASE_URL = "sqlite:///./codex.db" 
-# SQLAlchemy 엔진을 생성합니다. connect_args는 스레드 관련 설정을 위함입니다.
+# SQLAlchemy 엔진을 생성.
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-# 데이터베이스 세션 생성을 위한 SessionLocal 클래스를 만듭니다.
+# 데이터베이스 세션 생성을 위한 SessionLocal 클래스
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-# SQLAlchemy 모델의 베이스 클래스를 생성합니다.
+# SQLAlchemy 모델의 베이스 클래스를 생성
 Base = declarative_base()
 
 
-# --- 2. Pydantic 모델 정의 ---
-# API의 입출력 데이터 형식을 정의합니다. 타입 힌트를 통해 데이터 유효성을 검사합니다.
+# --- Pydantic 모델 정의 ---
+# API의 입출력 데이터 형식을 정의
+# 데이터 유효성 검사
 class ItemBase(BaseModel):
     code: str
     name: str
@@ -29,7 +30,8 @@ class ItemBase(BaseModel):
 class ItemCreate(ItemBase):
     pass
 
-# API 응답에 사용될 모델입니다. orm_mode=True는 SQLAlchemy 모델과 연동되도록 합니다.
+# API 응답에 사용될 모델
+# orm_mode=True는 SQLAlchemy 모델과 연동
 class Item(ItemBase):
     class Config:
         orm_mode = True
@@ -50,14 +52,14 @@ class Weapon(WeaponBase):
         orm_mode = True
 
 
-# --- 3. SQLAlchemy 모델 (DB 테이블) 정의 ---
-# 데이터베이스의 'items' 테이블 구조를 정의하는 클래스입니다.
+# --- SQLAlchemy 모델 (DB 테이블) 정의 ---
+# 데이터베이스의 'items' 테이블 구조를 정의하는 클래스
 class DBItem(Base):
     __tablename__ = "items"
     code = Column(String, primary_key=True, index=True)
     name = Column(String, index=True)
     description = Column(String)
-    # effect는 "타입:값" 형태의 문자열로 효과를 저장합니다. (예: "health:1", "speed:20")
+    # effect는 "타입:값" 형태의 문자열로 효과를 저장
     effect = Column(String)
 
 class DBWeapon(Base):
@@ -70,9 +72,9 @@ class DBWeapon(Base):
     reload_time = Column(Float) # New column
 
 
-# --- 4. 데이터베이스 의존성 주입 ---
-# API가 호출될 때마다 독립적인 데이터베이스 세션을 생성하고, 끝나면 닫아주는 함수입니다.
-# 이 방식을 통해 데이터베이스 연결을 안전하게 관리할 수 있습니다.
+# --- 데이터베이스 의존성 주입 ---
+# API가 호출될 때마다 독립적인 데이터베이스 세션을 생성하고, 끝나면 닫아주는 함수
+# 이 방식을 통해 데이터베이스 연결을 안전하게 관리
 def get_db():
     db = SessionLocal()
     try:
@@ -81,15 +83,15 @@ def get_db():
         db.close()
 
 
-# --- 5. 서버 시작 이벤트 처리 ---
-# FastAPI 앱이 시작될 때 한 번만 실행되는 함수입니다.
+# --- 서버 시작 이벤트 처리 ---
+# FastAPI 앱이 시작될 때 한 번만 실행되는 함수
 @app.on_event("startup")
 def on_startup():
-    # 정의된 SQLAlchemy 모델을 바탕으로 데이터베이스에 테이블을 생성합니다.
+    # 정의된 SQLAlchemy 모델을 바탕으로 데이터베이스에 테이블을 생성
     Base.metadata.create_all(bind=engine)
     
     db = SessionLocal()
-    # 만약 아이템이 하나도 없다면, 샘플 데이터를 추가합니다.
+    # 만약 아이템이 하나도 없다면, 샘플 데이터를 추가
     if db.query(DBItem).count() == 0:
         sample_items = [
             DBItem(code="HP001", name="A", description="체력 1 회복.", effect="health:1"),
@@ -116,9 +118,9 @@ def on_startup():
     db.close()
 
 
-# --- 6. API 엔드포인트 정의 ---
+# --- API 엔드포인트 정의 ---
 
-# [신규] 모든 아이템 목록을 조회하는 API
+# 모든 아이템 목록을 조회하는 API
 @app.get("/items", response_model=List[Item])
 def get_all_items(db: Session = Depends(get_db)):
     """
@@ -134,7 +136,7 @@ def get_all_weapons(db: Session = Depends(get_db)):
     weapons = db.query(DBWeapon).all()
     return weapons
 
-# 특정 아이템을 코드로 조회하는 API (기존 코드 개선)
+# 특정 아이템을 코드로 조회하는 API
 @app.get("/item/{code}", response_model=Item)
 def get_item(code: str, db: Session = Depends(get_db)):
     """
@@ -142,11 +144,11 @@ def get_item(code: str, db: Session = Depends(get_db)):
     """
     item = db.query(DBItem).filter(DBItem.code == code).first()
     if item is None:
-        # 아이템이 없으면 404 에러를 발생시킵니다.
+        # 아이템이 없으면 404 에러
         raise HTTPException(status_code=404, detail="Item not found")
     return item
 
-# 아이템을 추가하는 API (기존 코드 개선)
+# 아이템을 추가하는 API
 @app.post("/add_item", response_model=Item)
 def add_item(item: ItemCreate, db: Session = Depends(get_db)):
     """
@@ -158,14 +160,13 @@ def add_item(item: ItemCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_item)
 
-    # Log item pickup to bitrogue_server
     try:
         log_data = {
             "item_code": db_item.code,
-            "user_id": 1,  # Placeholder: Replace with actual user ID from game context
-            "score_at_pickup": 0 # Placeholder: Replace with actual score from game context
+            "user_id": 1,  
+            "score_at_pickup": 0 
         }
-        requests.post("http://localhost:8000/log_item_pickup", json=log_data)
+        requests.post("http://192.168.45.245:8000/log_item_pickup", json=log_data)
     except requests.exceptions.ConnectionError as e:
         print(f"Could not connect to bitrogue_server: {e}")
     except Exception as e:

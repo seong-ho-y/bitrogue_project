@@ -7,16 +7,16 @@ from passlib.context import CryptContext
 
 app = FastAPI()
 
-# 1. Database Setup
+# 1. DB 셋업
 DATABASE_URL = "sqlite:///./bitrogue.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# 2. Password Hashing Setup
+# 2. 비번 셋업
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# 3. Database Dependency
+# 3. DB 의존성
 def get_db():
     db = SessionLocal()
     try:
@@ -24,7 +24,7 @@ def get_db():
     finally:
         db.close()
 
-# 4. Pydantic Models (Data Schemas)
+# 4. Pydantic Models
 class UserCreate(BaseModel):
     username: str
     password: str
@@ -32,7 +32,7 @@ class UserCreate(BaseModel):
 class User(BaseModel):
     id: int
     username: str
-    high_score: int # Add high_score to User model
+    high_score: int
 
     class Config:
         orm_mode = True
@@ -46,7 +46,7 @@ class Score(ScoreCreate):
     id: int
     user_id: int
     timestamp: datetime
-    user: User # Include user info in the score response
+    user: User
 
     class Config:
         orm_mode = True
@@ -63,13 +63,13 @@ class ItemPickupLogResponse(ItemPickupLog):
     class Config:
         orm_mode = True
 
-# 5. SQLAlchemy Models (Database Tables)
+# 5. SQLAlchemy Models
 class UserModel(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    high_score = Column(Integer, default=0) # New high_score column
+    high_score = Column(Integer, default=0) # 새로운 하이스코어 Column
     created_at = Column(DateTime, default=datetime.utcnow)
     scores = relationship("ScoreModel", back_populates="user")
 
@@ -91,7 +91,7 @@ class ItemPickupLogModel(Base):
     score_at_pickup = Column(Integer)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
-# 6. Create Database Tables
+# 6. 데이터베이스 만들기
 Base.metadata.create_all(bind=engine)
 
 # 7. API Endpoints
@@ -126,7 +126,7 @@ def create_score(score: ScoreCreate, user_id: int, db: Session = Depends(get_db)
     db.commit()
     db.refresh(db_score)
 
-    # Update user's high score if current score is higher
+    # 하이스코어 갱신
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if user and score.score > user.high_score:
         user.high_score = score.score
@@ -138,7 +138,7 @@ def create_score(score: ScoreCreate, user_id: int, db: Session = Depends(get_db)
 
 @app.get("/leaderboard", response_model=list[Score])
 def get_leaderboard(db: Session = Depends(get_db)):
-    # Query scores and join with user data, order by score descending
+    # 오름차순으로 리더보드 갱신
     scores = (
         db.query(ScoreModel)
         .join(UserModel)
