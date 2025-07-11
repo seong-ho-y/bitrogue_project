@@ -4,6 +4,9 @@ import 'package:flutter_client/main.dart';
 import 'package:flutter_client/weapon.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_client/leaderboard_screen.dart';
+import 'package:flutter_client/item_dictionary_screen.dart'; // New import
+import 'package:flutter_client/constants.dart';
 
 // 서버에서 받아온 무기 정보를 담을 모델 클래스
 class WeaponInfo {
@@ -39,35 +42,70 @@ class WeaponSelectionScreen extends StatefulWidget {
 class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
   late Future<Map<String, dynamic>> _gameDataFuture;
   WeaponInfo? _selectedWeaponInfo;
+  int _userHighScore = 0; // State variable for user's high score
+  late PageController _pageController; // For weapon sliding
+  int _currentPage = 0;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(viewportFraction: 0.8); // Show part of next/prev weapon
     _gameDataFuture = _loadGameData();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  Future<int> _fetchUserHighScore() async {
+    final prefs = await SharedPreferences.getInstance();
+    final int? userId = prefs.getInt('userId');
+
+    if (userId == null) {
+      print('Error: User ID not found for fetching high score.');
+      return 0; // Or throw an error, or navigate to login
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConstants.baseUrl}/users/$userId/high_score'),
+      );
+
+      if (response.statusCode == 200) {
+        return int.parse(response.body);
+      } else {
+        print('Failed to fetch user high score: ${response.statusCode}');
+        return 0;
+      }
+    } catch (e) {
+      print('Error fetching user high score: $e');
+      return 0;
+    }
   }
 
   // 서버에서 무기 목록을 가져오고, 로컬에서 최고 점수를 불러오는 비동기 함수
   Future<Map<String, dynamic>> _loadGameData() async {
     try {
       // 1. Fetch weapons from the server
-      final response = await http.get(Uri.parse('http://192.168.45.245:8001/weapons'));
+      final response = await http.get(Uri.parse('${AppConstants.codexBaseUrl}/weapons'));
       if (response.statusCode != 200) {
         throw Exception('Failed to load weapons from server');
       }
       final List<dynamic> weaponsJson = json.decode(utf8.decode(response.bodyBytes));
       final List<WeaponInfo> weapons = weaponsJson.map((json) => WeaponInfo.fromJson(json)).toList();
 
-      // 2. Load high score from local storage
-      final prefs = await SharedPreferences.getInstance();
-      final highScore = prefs.getInt('highScore') ?? 0;
+      // 2. Fetch high score from the server
+      _userHighScore = await _fetchUserHighScore();
       
       // 3. Set default selected weapon if null
       if (_selectedWeaponInfo == null) {
-          final firstUnlockedWeapon = weapons.firstWhere((w) => highScore >= w.unlockScore, orElse: () => weapons.first);
+          final firstUnlockedWeapon = weapons.firstWhere((w) => _userHighScore >= w.unlockScore, orElse: () => weapons.first);
           _selectedWeaponInfo = firstUnlockedWeapon;
       }
 
-      return {'weapons': weapons, 'highScore': highScore};
+      return {'weapons': weapons, 'highScore': _userHighScore};
     } catch (e) {
       // 에러 발생 시 재시도 버튼을 보여주기 위해 에러를 전파
       print('Error loading game data: $e');
@@ -76,11 +114,12 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
   }
 
   // WeaponInfo.code를 기반으로 실제 Weapon 객체를 생성하는 헬퍼 함수
-
   Weapon _createWeaponFromInfo(WeaponInfo info) {
     switch (info.code) {
       case 'W001':
         return Rifle();
+      case 'W006':
+        return Shotgun();
       case 'W002':
         return ChargeShot();
       case 'W003':
@@ -89,8 +128,6 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
         return Laser();
       case 'W005':
         return ProximityMine();
-      case 'W006':
-        return Shotgun();
       default:
         return Rifle(); // 기본값
     }
@@ -100,18 +137,14 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[900],
-      body: Center(
-        child: FutureBuilder<Map<String, dynamic>>(
-          future: _gameDataFuture,
-          builder: (context, snapshot) {
-            // 로딩 중일 때
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const CircularProgressIndicator();
-            }
-
-            // 에러가 발생했을 때
-            if (snapshot.hasError) {
-              return Column(
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _gameDataFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)),
@@ -125,99 +158,236 @@ class _WeaponSelectionScreenState extends State<WeaponSelectionScreen> {
                     child: const Text('Retry'),
                   )
                 ],
-              );
-            }
+              ),
+            );
+          } else if (snapshot.hasData) {
+            final List<WeaponInfo> weapons = snapshot.data!['weapons'];
 
-            // 데이터 로딩 성공
-            if (snapshot.hasData) {
-              final List<WeaponInfo> weapons = snapshot.data!['weapons'];
-              final int highScore = snapshot.data!['highScore'];
-
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'CHOOSE YOUR WEAPON',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
+            return Stack(
+              children: [
+                // Background Image/Animation (Placeholder)
+                Positioned.fill(
+                  child: Image.network(
+                    'https://via.placeholder.com/800x600.png?text=Hangar+Background', // Placeholder image
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                // Overlay for dimming/effects
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withOpacity(0.6),
+                  ),
+                ),
+                // Main Content
+                Column(
+                  children: [
+                    // Top Section: Title and High Score
+                    Padding(
+                      padding: const EdgeInsets.only(top: 60.0, bottom: 20.0),
+                      child: Column(
+                        children: [
+                          const Text(
+                            'ARMORY',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 4,
+                              shadows: [
+                                Shadow(blurRadius: 10.0, color: Colors.black, offset: Offset(3.0, 3.0)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'High Score: $_userHighScore',
+                            style: TextStyle(color: Colors.amberAccent, fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Text(
-                    'High Score: $highScore',
-                    style: TextStyle(color: Colors.amber, fontSize: 16),
-                  ),
-                  const SizedBox(height: 40),
-                  
-                  // 무기 선택 버튼들
-                  ...weapons.map((weaponInfo) {
-                    final bool isUnlocked = highScore >= weaponInfo.unlockScore;
-                    final bool isSelected = weaponInfo.code == _selectedWeaponInfo?.code;
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: isSelected && isUnlocked ? Colors.teal : Colors.transparent,
-                          side: BorderSide(color: isUnlocked ? Colors.white : Colors.grey),
-                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                        ),
-                        onPressed: isUnlocked ? () {
+                    // Weapon Slider
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: weapons.length,
+                        onPageChanged: (index) {
                           setState(() {
-                            _selectedWeaponInfo = weaponInfo;
+                            _currentPage = index;
+                            _selectedWeaponInfo = weapons[index];
                           });
-                        } : null, // 잠겼으면 버튼 비활성화
+                        },
+                        itemBuilder: (context, index) {
+                          final weaponInfo = weapons[index];
+                          final bool isUnlocked = _userHighScore >= weaponInfo.unlockScore;
+                          final bool isSelected = weaponInfo.code == _selectedWeaponInfo?.code;
+
+                          return AnimatedBuilder(
+                            animation: _pageController,
+                            builder: (context, child) {
+                              double value = 1.0;
+                              if (_pageController.position.haveDimensions) {
+                                value = _pageController.page! - index;
+                                value = (1 - (value.abs() * 0.3)).clamp(0.0, 1.0); // Scale effect
+                              }
+                              return Center(
+                                child: SizedBox(
+                                  height: Curves.easeOut.transform(value) * 300, // Height animation
+                                  width: Curves.easeOut.transform(value) * 250, // Width animation
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: GestureDetector(
+                              onTap: isUnlocked ? () {
+                                setState(() {
+                                  _selectedWeaponInfo = weaponInfo;
+                                  _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+                                });
+                              } : null,
+                              child: Card(
+                                elevation: 10,
+                                color: isUnlocked ? Colors.blueGrey[700] : Colors.grey[800],
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: isSelected ? Colors.amber : Colors.transparent,
+                                      width: 3,
+                                    ),
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        weaponInfo.name.toUpperCase(),
+                                        style: TextStyle(
+                                          color: isUnlocked ? Colors.white : Colors.grey[500],
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        weaponInfo.description,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: isUnlocked ? Colors.grey[300] : Colors.grey[600],
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 15),
+                                      if (!isUnlocked)
+                                        Text(
+                                          'UNLOCK AT ${weaponInfo.unlockScore} SCORE',
+                                          style: const TextStyle(
+                                            color: Colors.redAccent,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ) else if (isSelected) 
+                                        const Icon(Icons.check_circle, color: Colors.amber, size: 30),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    // Page Indicator
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: weapons.map((weapon) {
+                        int index = weapons.indexOf(weapon);
+                        return Container(
+                          width: 8.0,
+                          height: 8.0,
+                          margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _currentPage == index
+                                ? Colors.amber
+                                : Colors.grey.withOpacity(0.5),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                    // Bottom Buttons
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 40.0, right: 20.0),
+                      child: Align(
+                        alignment: Alignment.bottomRight,
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                             Text(weaponInfo.name.toUpperCase()),
-                             if (!isUnlocked)
-                               Padding(
-                                 padding: const EdgeInsets.only(top: 4.0),
-                                 child: Text(
-                                   '(Unlock at ${weaponInfo.unlockScore})',
-                                   style: const TextStyle(fontSize: 10, color: Colors.grey),
-                                 ),
-                               ),
+                            ElevatedButton.icon(
+                              onPressed: _selectedWeaponInfo == null || !(_userHighScore >= _selectedWeaponInfo!.unlockScore) ? null : () {
+                                final selectedWeapon = _createWeaponFromInfo(_selectedWeaponInfo!);
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => GameBoyUI(
+                                      game: MyGame(initialWeapon: selectedWeapon),
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.play_arrow, color: Colors.white),
+                              label: const Text('START GAME', style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green[700],
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
+                                );
+                              },
+                              icon: const Icon(Icons.leaderboard, color: Colors.white),
+                              label: const Text('VIEW LEADERBOARD', style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue[700],
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const ItemDictionaryScreen()),
+                                );
+                              },
+                              icon: const Icon(Icons.book, color: Colors.white),
+                              label: const Text('ITEM DICTIONARY', style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange[700],
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    );
-                  }).toList(),
-                  
-                  const SizedBox(height: 60),
-
-                  // 게임 시작 버튼
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 124, 242, 81),
-                      padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                     ),
-                    onPressed: _selectedWeaponInfo == null ? null : () {
-                      final selectedWeapon = _createWeaponFromInfo(_selectedWeaponInfo!);
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => GameBoyUI(
-                            game: MyGame(initialWeapon: selectedWeapon),
-                          ),
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      'START GAME',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ),
-                ],
-              );
-            }
-            // 데이터가 없는 경우 (이론상 발생하기 어려움)
-            return const Text('No weapon data found.', style: TextStyle(color: Colors.white));
-          },
-        ),
+                  ],
+                ),
+              ],
+            );
+          }
+          return const Text('No weapon data found.', style: TextStyle(color: Colors.white));
+        },
       ),
     );
   }

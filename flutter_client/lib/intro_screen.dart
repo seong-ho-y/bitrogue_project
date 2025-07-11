@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_client/constants.dart';
 
 import 'package:flutter_client/weapon_selection_screen.dart';
 import 'package:flutter_client/register_screen.dart';
@@ -32,7 +34,7 @@ class _IntroScreenState extends State<IntroScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.45.245:8000/login'), // Updated endpoint
+        Uri.parse('${AppConstants.baseUrl}/login'), // Updated endpoint
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -43,8 +45,14 @@ class _IntroScreenState extends State<IntroScreen> {
       );
 
       if (response.statusCode == 200) {
+        final Map<String, dynamic> userData = jsonDecode(response.body);
+        final int userId = userData['id'];
+        print('Logged in user ID: $userId'); // Debug print
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('userId', userId);
+
         // On successful login, navigate to the weapon selection screen
-        // You might want to save the user data (e.g., user ID) for later use
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const WeaponSelectionScreen()),

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy import create_engine, Column, String, Integer
+from sqlalchemy import create_engine, Column, String, Integer, Float
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from pydantic import BaseModel
 from typing import List
@@ -38,6 +38,8 @@ class WeaponBase(BaseModel):
     name: str
     description: str
     unlock_score: int
+    max_ammo: int # New field
+    reload_time: float # New field
 
 class WeaponCreate(WeaponBase):
     pass
@@ -63,6 +65,8 @@ class DBWeapon(Base):
     name = Column(String, index=True)
     description = Column(String)
     unlock_score = Column(Integer)
+    max_ammo = Column(Integer) # New column
+    reload_time = Column(Float) # New column
 
 
 # --- 4. 데이터베이스 의존성 주입 ---
@@ -87,21 +91,24 @@ def on_startup():
     # 만약 아이템이 하나도 없다면, 샘플 데이터를 추가합니다.
     if db.query(DBItem).count() == 0:
         sample_items = [
-            DBItem(code="HP001", name="Health Potion", description="Recovers 1 HP.", effect="health:1"),
-            DBItem(code="SP001", name="Speed Boots", description="Increases movement speed by 20%.", effect="speed:20"),
-            DBItem(code="DMG001", name="Power Glove", description="Increases projectile damage by 1.", effect="damage:1")
+            DBItem(code="HP001", name="A", description="체력 1 회복.", effect="health:1"),
+            DBItem(code="SP001", name="B", description="이동 속도 20% 증가.", effect="speed:20"),
+            DBItem(code="DMG001", name="C", description="발사체 공격력 1 증가.", effect="damage:1"),
+            DBItem(code="DMG002", name="D", description="무기 공격력 15% 증가. 탄속 10% 감소.", effect="damage_percent:15,projectile_speed_percent:-10"),
+            DBItem(code="OVL001", name="E", description="다음 5회 공격에 한해 공격력 50% 증가. 이후 10초간 공격력 20% 감소.", effect="overload_damage:5,overload_duration:10"),
+            DBItem(code="FIR001", name="F", description="연사력 15% 증가. 탄약 소모량 10% 증가.", effect="fire_rate_percent:15,ammo_cost_percent:10"),
         ]
         db.add_all(sample_items)
         db.commit()
 
     if db.query(DBWeapon).count() == 0:
         sample_weapons = [
-            DBWeapon(code="W001", name="Standard", description="A reliable standard-issue weapon.", unlock_score=0),
-            DBWeapon(code="W006", name="Shotgun", description="Fires multiple projectiles in a spread.", unlock_score=500),
-            DBWeapon(code="W002", name="Charge Shot", description="Hold to charge for a powerful blast.", unlock_score=1000),
-            DBWeapon(code="W003", name="Crack Shot", description="Splits into four projectiles mid-flight.", unlock_score=2000),
-            DBWeapon(code="W004", name="Laser", description="Pierces through multiple enemies.", unlock_score=3000),
-            DBWeapon(code="W005", name="Proximity Mine", description="Explodes after a short delay.", unlock_score=4000)
+            DBWeapon(code="W001", name="Standard", description="A reliable standard-issue weapon.", unlock_score=0, max_ammo=100, reload_time=2.0),
+            DBWeapon(code="W006", name="Shotgun", description="Fires multiple projectiles in a spread.", unlock_score=500, max_ammo=10, reload_time=3.0),
+            DBWeapon(code="W002", name="Charge Shot", description="Hold to charge for a powerful blast.", unlock_score=1000, max_ammo=5, reload_time=4.0),
+            DBWeapon(code="W003", name="Crack Shot", description="Splits into four projectiles mid-flight.", unlock_score=2000, max_ammo=15, reload_time=3.5),
+            DBWeapon(code="W004", name="Laser", description="Pierces through multiple enemies.", unlock_score=3000, max_ammo=20, reload_time=5.0),
+            DBWeapon(code="W005", name="Proximity Mine", description="Explodes after a short delay.", unlock_score=4000, max_ammo=3, reload_time=2.5)
         ]
         db.add_all(sample_weapons)
         db.commit()

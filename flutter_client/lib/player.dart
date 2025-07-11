@@ -15,6 +15,8 @@ import 'main.dart';
 
 // ==================== PlayerComponent ====================
 class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, CollisionCallbacks {
+  late Weapon currentWeapon;
+
   PlayerComponent({required Weapon initialWeapon})
       : super(
           position: Vector2(100, 30),
@@ -32,7 +34,6 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
     List<String> collectedItemCodes = [];
 
     // 무기 관련 변수
-    late Weapon currentWeapon;
     double _timeSinceLastAttack = 0.0;
     double _chargeStartTime = 0.0; // 차지 시작 시간
 
@@ -69,6 +70,22 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
   void update(double dt) {
     super.update(dt);
     _timeSinceLastAttack += dt;
+
+    // Update weapon reload state
+    currentWeapon.updateReload(dt);
+
+    // Handle player blinking during reload
+    if (currentWeapon.isReloading) {
+      blinkTimer -= dt;
+      if (blinkTimer <= 0) {
+        blinkTimer = blinkInterval;
+        isVisible = !isVisible;
+        paint.color = isVisible ? const Color(0xFF33CC33) : const Color(0x88FFFFFF); // Blink effect
+      }
+    } else if (!isVisible) { // Ensure player is visible when not reloading
+      isVisible = true;
+      paint.color = const Color(0xFF33CC33);
+    }
 
     if (dodgeCooldownTimer > 0) {
       dodgeCooldownTimer -= dt;
@@ -131,7 +148,13 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
 
   /// 무기 발사
   void fire({double chargeTime = 0.0}) {
-    if (_timeSinceLastAttack >= currentWeapon.coolDown) {
+    if (currentWeapon.isReloading) return; // Cannot fire while reloading
+    if (currentWeapon.currentAmmo <= 0) {
+      currentWeapon.startReload();
+      return;
+    }
+
+    if (game.currentTime() - _timeSinceLastAttack >= currentWeapon.coolDown) {
       currentWeapon.attack(game, position.clone(), game.lastDirection.clone(), chargeTime: chargeTime);
       _timeSinceLastAttack = 0.0;
     }
@@ -139,11 +162,13 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
 
   /// 차지 시작
   void startCharge() {
+    if (currentWeapon.isReloading) return; // Cannot charge while reloading
     _chargeStartTime = game.currentTime();
   }
 
   /// 차지 해제 및 발사
   void releaseCharge() {
+    if (currentWeapon.isReloading) return; // Cannot release charge while reloading
     final chargeTime = game.currentTime() - _chargeStartTime;
     fire(chargeTime: chargeTime);
   }
@@ -151,6 +176,7 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
   /// 무기 교체
   void equipWeapon(Weapon newWeapon) {
     currentWeapon = newWeapon;
+    game.currentWeaponNotifier.value = newWeapon; // Update the notifier
     print('Equipped ${currentWeapon.name}');
   }
 
@@ -241,7 +267,7 @@ class PlayerComponent extends RectangleComponent with HasGameReference<MyGame>, 
   // 아이템 효과를 적용하는 함수
   void _applyItemEffect(Item item) {
     print('Picked up item: ${item.name} (${item.description})');
-    collectedItemCodes.add(item.code); // 획득한 아이템 코드 추가
+    collectedItemCodes.add(item.name); // 획득한 아이템 이름 추가
 
     // 아이템 효과 문자열을 ':' 기준으로 분리 (예: "health:1")
     final parts = item.effect.split(':');

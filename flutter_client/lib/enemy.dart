@@ -100,7 +100,7 @@ class RunnerEnemy extends EnemyBaseComponent {
 // 원거리 공격 적
 class RangerEnemy extends EnemyBaseComponent {
   late Timer _attackTimer;
-  final double _attackCooldown = 2.0;
+  final double _attackCooldown = 0.5; // 0.5초로 변경
   final double _preferredDistance = 150.0;
 
   RangerEnemy({Vector2? position}) : super(

@@ -32,6 +32,7 @@ class UserCreate(BaseModel):
 class User(BaseModel):
     id: int
     username: str
+    high_score: int # Add high_score to User model
 
     class Config:
         orm_mode = True
@@ -56,6 +57,7 @@ class UserModel(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
+    high_score = Column(Integer, default=0) # New high_score column
     created_at = Column(DateTime, default=datetime.utcnow)
     scores = relationship("ScoreModel", back_populates="user")
 
@@ -80,7 +82,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
     hashed_password = pwd_context.hash(user.password)
-    new_user = UserModel(username=user.username, hashed_password=hashed_password)
+    new_user = UserModel(username=user.username, hashed_password=hashed_password, high_score=0) # Initialize high_score
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -103,6 +105,15 @@ def create_score(score: ScoreCreate, user_id: int, db: Session = Depends(get_db)
     db.add(db_score)
     db.commit()
     db.refresh(db_score)
+
+    # Update user's high score if current score is higher
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if user and score.score > user.high_score:
+        user.high_score = score.score
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
     return db_score
 
 @app.get("/leaderboard", response_model=list[Score])
@@ -116,3 +127,10 @@ def get_leaderboard(db: Session = Depends(get_db)):
         .all()
     )
     return scores
+
+@app.get("/users/{user_id}/high_score", response_model=int)
+def get_user_high_score(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user.high_score

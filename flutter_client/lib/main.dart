@@ -16,6 +16,8 @@ import 'player.dart';
 import 'projectile.dart';
 import 'package:flutter_client/score_screen.dart';
 
+import 'package:flutter_client/constants.dart';
+
 // ==================== MyGame ====================
 class MyGame extends FlameGame with HasCollisionDetection {
   static bool isMovingUp = false;
@@ -25,6 +27,7 @@ class MyGame extends FlameGame with HasCollisionDetection {
   static int score = 0;
 
   final Weapon initialWeapon; // 시작 시 선택된 무기
+  final ValueNotifier<Weapon> currentWeaponNotifier; // Add this line
 
   Vector2 lastDirection = Vector2(0, -1);
   late PlayerComponent player;
@@ -37,13 +40,15 @@ class MyGame extends FlameGame with HasCollisionDetection {
   final ValueNotifier<double> healthNotifier = ValueNotifier(0);
   final ValueNotifier<double> shieldNotifier = ValueNotifier(0);
 
-  MyGame({required this.initialWeapon}); // 생성자 수정
+  MyGame({required this.initialWeapon})
+      : currentWeaponNotifier = ValueNotifier(initialWeapon); // Initialize here
 
   @override
   Future<void> onLoad() async {
     super.onLoad();
     player = PlayerComponent(initialWeapon: initialWeapon); // 플레이어에게 무기 전달
     add(player);
+    currentWeaponNotifier.value = player.currentWeapon; // Set initial weapon to notifier
 
     enemyManager = EnemyManager();
     add(enemyManager);
@@ -83,11 +88,13 @@ class MyGame extends FlameGame with HasCollisionDetection {
 
   void onPlayerDeath() async {  //플레이어 죽었을 때
     final prefs = await SharedPreferences.getInstance();
-    final highScore = prefs.getInt('highScore') ?? 0;
+    final int? userId = prefs.getInt('userId'); // Retrieve userId
+    int currentHighScore = 0; // Initialize with a default value
 
-    if (score > highScore) {
-      await prefs.setInt('highScore', score);
-      print('New high score: $score');
+    if (userId == null) {
+      print('Error: User ID not found. Cannot submit score.');
+      // Optionally, navigate back to login or show an error to the user
+      return;
     }
 
     // Send score and collected items to the server
@@ -96,7 +103,7 @@ class MyGame extends FlameGame with HasCollisionDetection {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.45.81:8000/scores?user_id=1'), // TODO: Replace with actual user_id
+        Uri.parse('${AppConstants.baseUrl}/scores?user_id=$userId'), // Use constant URL
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -109,6 +116,18 @@ class MyGame extends FlameGame with HasCollisionDetection {
 
       if (response.statusCode == 200) {
         print('Score and items submitted successfully!');
+        // After submitting score, fetch the updated high score from the server
+        final high_score_response = await http.get(
+          Uri.parse('${AppConstants.baseUrl}/users/$userId/high_score'), // Use constant URL
+        );
+
+        if (high_score_response.statusCode == 200) {
+          currentHighScore = int.parse(high_score_response.body);
+          print('Fetched high score: $currentHighScore');
+        } else {
+          print('Failed to fetch high score: ${high_score_response.statusCode}');
+        }
+
       } else {
         print('Failed to submit score and items: ${response.statusCode}');
       }
@@ -116,22 +135,22 @@ class MyGame extends FlameGame with HasCollisionDetection {
       print('Error submitting score and items: $e');
     }
 
-    // Reset score for the next game
-    score = 0;
-    player.collectedItemCodes.clear(); // Clear collected items for the next game
-
     // Navigate back to the weapon selection screen
     if (buildContext != null) {
       Navigator.of(buildContext!).pushReplacement(
         MaterialPageRoute(
           builder: (context) => ScoreScreen(
             score: score,
-            highScore: highScore,
+            highScore: currentHighScore, // Pass the fetched high score
             weaponName: player.currentWeapon.name,
             collectedItems: collectedItemsString,
           ),
         ),
-      );
+      ).then((_) {
+        // Reset score after navigating away
+        score = 0;
+        player.collectedItemCodes.clear(); // Clear collected items for the next game
+      });
     }
   }
 }
@@ -213,6 +232,16 @@ class GameBoyUI extends StatelessWidget {
                           valueListenable: game.speedNotifier,
                           builder: (context, value, child) {
                             return GaugeWidget(label: "SPEED", value: value, color: Colors.cyan);
+                          },
+                        ),
+                        // Ammo Display
+                        ValueListenableBuilder<Weapon>(
+                          valueListenable: game.currentWeaponNotifier,
+                          builder: (context, weapon, child) {
+                            return Text(
+                              'AMMO: ${weapon.currentAmmoNotifier.value}/${weapon.maxAmmo}',
+                              style: const TextStyle(color: Colors.white, fontSize: 16),
+                            );
                           },
                         ),
                         // Health and Shield Gauges

@@ -27,20 +27,27 @@ class Item {
 }
 
 // 게임 월드에 표시될 아이템 컴포넌트
-class ItemComponent extends RectangleComponent with CollisionCallbacks {
+class ItemComponent extends TextComponent with CollisionCallbacks {
   final Item itemData;
 
   ItemComponent({required this.itemData, required Vector2 position})
       : super(
+          text: itemData.name, // 아이템 이름을 텍스트로 표시
           position: position,
-          size: Vector2(16, 16), // 아이템 크기
-          paint: Paint()..color = Colors.yellow, // 아이템 색상
+          anchor: Anchor.center, // 텍스트 중앙 정렬
+          textRenderer: TextPaint(
+            style: const TextStyle(
+              color: Colors.yellow, // 텍스트 색상
+              fontSize: 12, // 텍스트 크기
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         );
 
   @override
   Future<void> onLoad() async {
     super.onLoad();
-    // 충돌 감지를 위한 Hitbox 추가
-    add(RectangleHitbox());
+    // 충돌 감지를 위한 Hitbox 추가 (텍스트 크기에 맞게 조정)
+    add(RectangleHitbox(size: Vector2(16, 16))); // 텍스트 크기에 맞춰 hitbox 크기 조정
   }
 }
